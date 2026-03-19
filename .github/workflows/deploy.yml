@@ -1,1 +1,68 @@
+name: DAMS Selenium CI
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:          # Allow manual trigger from GitHub UI
+
+jobs:
+  selenium-tests:
+    name: Run Selenium Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout source code ──────────────────────────────────────────
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # ── 2. Set up Java 11 ────────────────────────────────────────────────
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+          cache: maven
+
+      # ── 3. Install Google Chrome ─────────────────────────────────────────
+      - name: Install Chrome
+        uses: browser-actions/setup-chrome@v1
+
+      # ── 4. Enable headless mode for CI ───────────────────────────────────
+      - name: Override headless flag for CI
+        run: |
+          sed -i 's/^headless=.*/headless=true/' \
+            src/main/resources/config.properties
+
+      # ── 5. Build and run tests via Maven ─────────────────────────────────
+      - name: Build & Execute Tests
+        run: mvn clean test -B
+
+      # ── 6. Upload ExtentReports HTML ─────────────────────────────────────
+      - name: Upload Test Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: extent-report
+          path: test-output/reports/
+          retention-days: 14
+
+      # ── 7. Upload Screenshots (only on failure) ───────────────────────────
+      - name: Upload Failure Screenshots
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: failure-screenshots
+          path: test-output/screenshots/
+          retention-days: 7
+
+      # ── 8. Upload Logs ────────────────────────────────────────────────────
+      - name: Upload Logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-logs
+          path: test-output/logs/
+          retention-days: 7
 
