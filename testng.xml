@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+
+<!--
+    testng.xml — TestNG Suite Configuration
+
+    This file tells TestNG:
+      - Suite name (shown in reports)
+      - Which test classes to run
+      - Thread count (1 = sequential, N = parallel)
+      - Listener registration (alternative to @Listeners annotation)
+
+    Surefire plugin in pom.xml points to this file via <suiteXmlFile>.
+    Run with: mvn test
+-->
+<suite name="DAMS Admin Panel — Login Test Suite" verbose="1" thread-count="1">
+
+    <test name="Login and OTP Tests">
+        <classes>
+            <class name="com.dams.test.LoginTest"/>
+        </classes>
+    </test>
+
+</suite>
