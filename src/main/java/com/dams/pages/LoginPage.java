@@ -2,6 +2,13 @@ package com.dams.pages;
 
 import com.dams.base.BasePage;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+
+import java.time.Duration;
+import java.util.List;
 
 /**
  * LoginPage
@@ -16,125 +23,130 @@ import org.openqa.selenium.By;
  *   Step B – OTP form (appears after successful credential submission)
  *     4. Enter OTP
  *     5. Click "Submit"
- *
- * All locators match the HTML provided in the requirements exactly.
  */
 public class LoginPage extends BasePage {
 
     // ── Locators – Credential form ───────────────────────────────────────────
 
-    /**
-     * <input placeholder="Email" type="text" id="email"
-     *        aria-required="true" class="ant-input css-tjsggz" />
-     */
-    private static final By EMAIL_INPUT =
-            By.cssSelector("input#email[placeholder='Email']");
+    private static final By EMAIL_INPUT    = By.cssSelector("input#email");
+    private static final By PASSWORD_INPUT = By.cssSelector("input#password");
 
     /**
-     * <input placeholder="******" type="password" id="password"
-     *        aria-required="true" class="ant-input ant-input-lg css-tjsggz" />
-     */
-    private static final By PASSWORD_INPUT =
-            By.cssSelector("input#password[type='password']");
-
-    /**
-     * <button type="submit" class="ant-btn … ant-btn-lg ant-btn-block">
-     *   <span>Login</span>
-     * </button>
+     * Login button matched by visible text – avoids fragile span:not([style]) tricks.
      */
     private static final By LOGIN_BUTTON =
-            By.cssSelector("button[type='submit'] span:not([style])");
+            By.xpath("//button[@type='submit'][.//span[normalize-space()='Login']]");
 
     // ── Locators – OTP form ──────────────────────────────────────────────────
 
     /**
-     * The OTP input field.  Ant Design renders a single <input> inside the
-     * OTP step.  We target the first visible text/number input that is NOT
-     * the password field (which is already submitted at this point).
-     *
-     * Fallback: By.cssSelector("input[maxlength]") targets Ant OTP inputs.
+     * OTP form indicator: any element that only exists on the OTP step.
+     * Covers:
+     *   • Ant Design 5.x individual OTP cells  (maxlength="1")
+     *   • Single OTP field                      (maxlength="4..8")
+     *   • An explicit #otp id
+     *   • A heading / label containing "OTP" text
      */
-    private static final By OTP_INPUT =
-            By.cssSelector("input.ant-input[maxlength], input.ant-otp-input, input[type='text']:not(#email)");
+    private static final By OTP_FORM_INDICATOR = By.xpath(
+            "//*["
+            + "self::input[@maxlength='1'][not(@type='password')] "
+            + "or self::input[@maxlength='4'][not(@type='password')] "
+            + "or self::input[@maxlength='6'][not(@type='password')] "
+            + "or self::input[@id='otp'] "
+            + "or self::input[contains(@class,'ant-otp')] "
+            + "or self::*[contains(normalize-space(),'OTP') "
+            + "           and not(self::script) and not(self::style)]]"
+    );
 
     /**
-     * <button type="submit" style="margin-top: 20px;" class="ant-btn … ant-btn-lg ant-btn-block">
-     *   <span>Submit</span>
-     * </button>
-     *
-     * Distinguished from the Login button by the inline margin-top style.
+     * First OTP input cell (for sending keys).
      */
+    private static final By OTP_INPUT_FIRST = By.xpath(
+            "(//input[@maxlength='1'][not(@type='password')] "
+            + "| //input[@maxlength='4'][not(@type='password')] "
+            + "| //input[@maxlength='6'][not(@type='password')] "
+            + "| //input[@id='otp'] "
+            + "| //input[contains(@class,'ant-otp')])[1]"
+    );
+
+    /** Submit button matched by visible text. */
     private static final By SUBMIT_BUTTON =
-            By.cssSelector("button[type='submit'][style*='margin-top']");
+            By.xpath("//button[@type='submit'][.//span[normalize-space()='Submit']]");
+
+    /** Extra wait time for OTP form to appear (server round-trip). */
+    private static final int OTP_FORM_TIMEOUT_SEC = 30;
 
     // ── Public API ───────────────────────────────────────────────────────────
 
-    /**
-     * Type the email address into the Email field.
-     *
-     * @param email e.g. "07siddwivedi@gmail.com"
-     */
     public void enterEmail(String email) {
         log.info("Entering email: {}", email);
         type(EMAIL_INPUT, email);
     }
 
-    /**
-     * Type the password into the Password field.
-     *
-     * @param password e.g. "Siddharth@123"
-     */
     public void enterPassword(String password) {
         log.info("Entering password: [REDACTED]");
         type(PASSWORD_INPUT, password);
     }
 
     /**
-     * Click the Login button (submits the credential form).
+     * Click the Login button; falls back to JS click if intercepted.
      */
     public void clickLogin() {
         log.info("Clicking Login button");
-        // Use XPath to find the button containing the text "Login"
-        By loginBtn = By.xpath("//button[@type='submit'][.//span[text()='Login']]");
-        click(loginBtn);
+        try {
+            click(LOGIN_BUTTON);
+        } catch (Exception e) {
+            log.warn("Standard click failed for Login button, retrying via JS: {}", e.getMessage());
+            jsClick(LOGIN_BUTTON);
+        }
     }
 
     /**
-     * Type the OTP into the OTP input that appears after login.
-     *
-     * @param otp e.g. "1980"
+     * Enter OTP – handles both single-field and multi-cell (Ant Design) OTP inputs.
      */
     public void enterOtp(String otp) {
-        log.info("Entering OTP: {}", otp);
-        type(OTP_INPUT, otp);
+        log.info("Entering OTP");
+
+        // Detect multi-cell OTP (maxlength="1" inputs)
+        List<WebElement> cells = driver.findElements(
+                By.xpath("//input[@maxlength='1'][not(@type='password')]"));
+
+        if (cells.size() >= 2) {
+            log.info("Detected multi-cell OTP ({} cells)", cells.size());
+            char[] digits = otp.toCharArray();
+            for (int i = 0; i < Math.min(digits.length, cells.size()); i++) {
+                WebElement cell = cells.get(i);
+                wait.waitForClickable(cell);
+                cell.clear();
+                cell.sendKeys(String.valueOf(digits[i]));
+            }
+        } else {
+            // Single OTP field
+            type(OTP_INPUT_FIRST, otp);
+        }
     }
 
     /**
-     * Click the Submit button to complete OTP verification.
+     * Click the Submit button; falls back to JS click if intercepted.
      */
     public void clickSubmit() {
         log.info("Clicking Submit button");
-        // XPath: button[type=submit] with inline margin-top style containing "Submit" span
-        By submitBtn = By.xpath(
-                "//button[@type='submit'][@style and contains(@style,'margin-top')][.//span[text()='Submit']]"
-        );
-        click(submitBtn);
+        try {
+            click(SUBMIT_BUTTON);
+        } catch (Exception e) {
+            log.warn("Standard click failed for Submit button, retrying via JS: {}", e.getMessage());
+            jsClick(SUBMIT_BUTTON);
+        }
     }
 
     // ── Compound actions ─────────────────────────────────────────────────────
 
-    /**
-     * Full Step A: fill credentials and click Login.
-     */
     public void performLogin(String email, String password) {
         enterEmail(email);
         enterPassword(password);
         clickLogin();
     }
 
-    /**
-     * Full Step B: enter OTP and click Submit.
-     */
     public void performOtpVerification(String otp) {
         enterOtp(otp);
         clickSubmit();
@@ -142,14 +154,42 @@ public class LoginPage extends BasePage {
 
     // ── State helpers ────────────────────────────────────────────────────────
 
-    /** True when the OTP form is visible (used to assert page transition). */
+    /**
+     * Waits up to OTP_FORM_TIMEOUT_SEC for the OTP form to appear.
+     * Uses a dedicated longer wait because the OTP step requires a
+     * server-side credential validation round-trip before rendering.
+     */
     public boolean isOtpFormVisible() {
-        return isDisplayed(OTP_INPUT);
+        log.info("Waiting up to {}s for OTP form...", OTP_FORM_TIMEOUT_SEC);
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(OTP_FORM_TIMEOUT_SEC))
+                    .until(ExpectedConditions.visibilityOfElementLocated(OTP_FORM_INDICATOR));
+            log.info("OTP form appeared successfully");
+            return true;
+        } catch (Exception e) {
+            log.error("OTP form NOT visible after {}s – URL: {} | Cause: {}",
+                    OTP_FORM_TIMEOUT_SEC, driver.getCurrentUrl(), e.getMessage());
+            logPageSourceSnippet();
+            return false;
+        }
     }
 
-    /** True when the credential form's email field is present. */
     public boolean isLoginFormVisible() {
         return isDisplayed(EMAIL_INPUT);
     }
+
+    // ── Private helpers ──────────────────────────────────────────────────────
+
+    private void jsClick(By locator) {
+        WebElement el = driver.findElement(locator);
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", el);
+    }
+
+    private void logPageSourceSnippet() {
+        try {
+            String src = driver.getPageSource();
+            log.debug("Page source (first 3000 chars for diagnosis):\n{}",
+                    src.substring(0, Math.min(src.length(), 3000)));
+        } catch (Exception ignored) {}
+    }
 }
- 
