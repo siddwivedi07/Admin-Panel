@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+
+<!--
+  DAMS Admin Panel – TestNG Suite
+  Runs all login / OTP tests in sequence (thread-count=1).
+  For parallel execution increase thread-count and set parallel="methods".
+-->
+<suite name="DAMS-Admin-Suite" verbose="2" thread-count="1">
+
+    <listeners>
+        <!-- Built-in TestNG listener that produces surefire-compatible XML -->
+    </listeners>
+
+    <test name="Login and OTP Flow">
+        <classes>
+            <class name="com.dams.test.LoginTest"/>
+        </classes>
+    </test>
+
+</suite>
