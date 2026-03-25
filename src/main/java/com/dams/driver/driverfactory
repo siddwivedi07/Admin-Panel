@@ -1,1 +1,146 @@
+package com.dams.driver;
+
+import com.dams.core.Config;
+import io.github.bonigarcia.wdm.WebDriverManager;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
+
+import java.time.Duration;
+
+/**
+ * DriverFactory.java — WebDriver Lifecycle Manager
+ *
+ * RESPONSIBILITY:
+ *   This class has ONE job: create and destroy WebDriver instances.
+ *   It reads browser config from Config.java and applies it.
+ *   Nothing else — no tests, no pages, no reports here.
+ *
+ * DESIGN DECISIONS:
+ *
+ *   ThreadLocal<WebDriver>:
+ *     Stores a separate WebDriver per thread.
+ *     If tests run in parallel (multiple threads), each thread gets
+ *     its own browser — they won't interfere with each other.
+ *     Even for single-thread runs, this is the correct pattern.
+ *
+ *   WebDriverManager:
+ *     Automatically downloads the correct ChromeDriver binary that
+ *     matches the installed Chrome version. No manual driver setup needed.
+ *     Works on your laptop AND on GitHub Actions CI server.
+ *
+ *   ChromeOptions — headless mode:
+ *     When headless=true (CI environment), Chrome runs without a visible
+ *     window. The CI server has no display/screen, so headless is required.
+ *     On local machine, headless=false so you can watch the browser.
+ */
+public class DriverFactory {
+
+    // ThreadLocal stores one WebDriver instance per thread
+    private static final ThreadLocal<WebDriver> driverHolder = new ThreadLocal<>();
+
+    // Private constructor — this is a utility class, no instances needed
+    private DriverFactory() {}
+
+    /**
+     * Initialises a new ChromeDriver and stores it in ThreadLocal.
+     * Call this at the start of each test (in @BeforeMethod).
+     *
+     * @return the newly created WebDriver
+     */
+    public static WebDriver initDriver() {
+        Config config = Config.getInstance();
+
+        // Step 1: WebDriverManager downloads/caches correct chromedriver binary
+        WebDriverManager.chromedriver().setup();
+
+        // Step 2: Configure Chrome browser options
+        ChromeOptions options = buildChromeOptions(config);
+
+        // Step 3: Create the ChromeDriver instance with our options
+        WebDriver driver = new ChromeDriver(options);
+
+        // Step 4: Apply timeouts from config
+        applyTimeouts(driver, config);
+
+        // Step 5: Store in ThreadLocal so getDriver() can retrieve it later
+        driverHolder.set(driver);
+
+        System.out.println("[DriverFactory] ChromeDriver started. Headless: " + config.isHeadless());
+        return driver;
+    }
+
+    /**
+     * Returns the WebDriver for the current thread.
+     * Call this anywhere in your test/page classes to get the active driver.
+     */
+    public static WebDriver getDriver() {
+        WebDriver driver = driverHolder.get();
+        if (driver == null) {
+            throw new IllegalStateException(
+                "[DriverFactory] No WebDriver found for current thread. " +
+                "Did you call initDriver() before getDriver()?");
+        }
+        return driver;
+    }
+
+    /**
+     * Quits (closes) the browser and removes the driver from ThreadLocal.
+     * Call this at the end of each test (in @AfterMethod).
+     * Removing from ThreadLocal prevents memory leaks in parallel runs.
+     */
+    public static void quitDriver() {
+        WebDriver driver = driverHolder.get();
+        if (driver != null) {
+            driver.quit();
+            driverHolder.remove();
+            System.out.println("[DriverFactory] ChromeDriver quit and removed from ThreadLocal.");
+        }
+    }
+
+    // ── Private helpers ────────────────────────────────────────────────────
+
+    /**
+     * Builds ChromeOptions based on config settings.
+     * All Chrome flags are centralised here — easy to add/remove.
+     */
+    private static ChromeOptions buildChromeOptions(Config config) {
+        ChromeOptions options = new ChromeOptions();
+
+        // Required for Selenium 4 with newer Chrome versions
+        options.addArguments("--remote-allow-origins=*");
+
+        // Headless: no visible window — mandatory for CI environments
+        if (config.isHeadless()) {
+            options.addArguments("--headless=new");   // "new" headless (Chrome 112+)
+            options.addArguments("--disable-gpu");    // Required on Windows headless
+            options.addArguments("--window-size=1920,1080"); // Virtual screen size
+        }
+
+        // Stability flags for CI Linux environment
+        options.addArguments("--no-sandbox");
+        options.addArguments("--disable-dev-shm-usage");  // Overcome limited /dev/shm in Docker
+        options.addArguments("--disable-extensions");
+        options.addArguments("--disable-popup-blocking");
+
+        return options;
+    }
+
+    /**
+     * Applies all timeout settings to the driver.
+     * Values come from config.properties — not hardcoded.
+     */
+    private static void applyTimeouts(WebDriver driver, Config config) {
+        // Implicit wait: Selenium waits up to N seconds when finding an element
+        driver.manage().timeouts()
+              .implicitlyWait(Duration.ofSeconds(config.getImplicitWait()));
+
+        // Page load timeout: how long to wait for a page to fully load
+        driver.manage().timeouts()
+              .pageLoadTimeout(Duration.ofSeconds(config.getPageLoadTimeout()));
+
+        // Maximise window (only meaningful in non-headless mode)
+        driver.manage().window().maximize();
+    }
+}
 
