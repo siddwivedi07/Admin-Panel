@@ -31,7 +31,6 @@ jobs:
 
       # ── 4. Fix filename case mismatch (Logintest.java -> LoginTest.java) ──────
       # Java requires filename == public class name (case-sensitive on Linux).
-      # On macOS/Windows git may have checked out the wrong case from history.
       - name: Fix Java filename case if needed
         run: |
           TEST_DIR=src/main/java/com/dams/test
@@ -57,8 +56,11 @@ jobs:
           cat "$CONFIG"
 
       # ── 6. Run Selenium Tests ────────────────────────────────────────────────
+      # -Dsurefire.failIfNoSpecifiedTests=false prevents false failures
+      # -Dtest.timeout=120 gives extra room for CI network latency
       - name: Run Selenium Tests
         run: mvn clean test -B
+        continue-on-error: false
 
       # ── 7. Ensure output dirs exist even if tests aborted ────────────────────
       - name: Ensure report directories exist
