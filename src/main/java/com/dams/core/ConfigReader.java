@@ -48,7 +48,7 @@ public class ConfigReader {
         if (value == null) {
             throw new RuntimeException("Missing property in config.properties: " + key);
         }
-        return value.trim(); 
+        return value.trim();
     }
 
     // ── Typed convenience getters ────────────────────────────────────────────
