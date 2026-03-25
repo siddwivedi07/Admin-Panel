@@ -29,28 +29,43 @@ jobs:
       - name: Install Google Chrome
         uses: browser-actions/setup-chrome@v2
 
+      # ── 4. Fix filename case mismatch (Logintest.java -> LoginTest.java) ──────
+      # Java requires filename == public class name (case-sensitive on Linux).
+      # On macOS/Windows git may have checked out the wrong case from history.
+      - name: Fix Java filename case if needed
+        run: |
+          TEST_DIR=src/main/java/com/dams/test
+          WRONG=$TEST_DIR/Logintest.java
+          RIGHT=$TEST_DIR/LoginTest.java
+          if [ -f "$WRONG" ] && [ ! -f "$RIGHT" ]; then
+            echo "Renaming $WRONG -> $RIGHT"
+            mv "$WRONG" "$RIGHT"
+          fi
+          echo "Test file present: $(ls $TEST_DIR/)"
+
+      # ── 5. Switch config to headless for CI ──────────────────────────────────
       - name: Set headless=true for CI
         run: |
           CONFIG=src/main/resources/config.properties
           if [ ! -f "$CONFIG" ]; then
-            echo "ERROR: $CONFIG not found. Workspace contents:"
+            echo "ERROR: $CONFIG not found"
             find . -name "*.properties" | head -20
             exit 1
           fi
           sed -i 's/headless=false/headless=true/' "$CONFIG"
-          echo "Updated config:"
+          echo "Config after update:"
           cat "$CONFIG"
 
-      # ── 5. Run Selenium Tests ────────────────────────────────────────────────
+      # ── 6. Run Selenium Tests ────────────────────────────────────────────────
       - name: Run Selenium Tests
         run: mvn clean test -B
 
-      # ── 6. Create test-output dir if tests skipped/aborted ───────────────────
-      - name: Ensure report directory exists
+      # ── 7. Ensure output dirs exist even if tests aborted ────────────────────
+      - name: Ensure report directories exist
         if: always()
         run: mkdir -p test-output/reports test-output/screenshots test-output/logs
 
-      # ── 7. Upload Reports ────────────────────────────────────────────────────
+      # ── 8. Upload Reports ────────────────────────────────────────────────────
       - name: Upload Reports
         if: always()
         uses: actions/upload-artifact@v4
