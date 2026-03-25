@@ -58,7 +58,7 @@ public abstract class BaseTest {
             log.warn("FAILED: {}", result.getName());
             // Capture screenshot for TC_6 row
             byte[] shot = captureCurrentScreenshot();
-            ReportManager.getInstance().endTest(false, shot);
+            ReportManager.getInstance().endTest(false, shot); 
         }
         DriverManager.quitDriver();
     }
