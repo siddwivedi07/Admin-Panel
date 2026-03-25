@@ -1,0 +1,26 @@
+# ─── DAMS Admin Panel – Selenium Configuration ───────────────────────────────
+# CI pipeline swaps headless=false → headless=true via sed before running tests.
+
+# Browser settings
+browser=chrome
+headless=false
+
+# Application URL
+url=https://devadmin.damsdelhi.com/
+
+# Credentials
+email=07siddwivedi@gmail.com
+password=Siddharth@123
+
+# OTP (default static OTP used in dev/staging)
+otp=1980
+
+# Timeouts (seconds)
+implicit.wait=10
+explicit.wait=20
+page.load.timeout=30
+
+# Report paths (relative to project root)
+report.path=test-output/reports/DAMS_Report.html
+screenshot.path=test-output/screenshots/
+log.path=test-output/logs/
