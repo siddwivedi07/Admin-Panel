@@ -1,1 +1,117 @@
+package com.dams.core;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
+
+
+public class Config {
+
+    // ── Singleton: one shared instance across the entire test run ──────────
+    private static Config instance;
+    private final Properties properties = new Properties();
+
+    // Private constructor — loads the properties file exactly once
+    private Config() {
+        try (InputStream input = getClass()
+                .getClassLoader()
+                .getResourceAsStream("config.properties")) {
+
+            if (input == null) {
+                throw new RuntimeException(
+                    "[Config] ERROR: 'config.properties' not found in src/main/resources/");
+            }
+            properties.load(input);
+            System.out.println("[Config] config.properties loaded successfully.");
+
+        } catch (IOException e) {
+            throw new RuntimeException("[Config] Failed to load config.properties", e);
+        }
+    }
+
+    /**
+     * Returns the single shared Config instance (lazy-initialised, thread-safe).
+     */
+    public static synchronized Config getInstance() {
+        if (instance == null) {
+            instance = new Config();
+        }
+        return instance;
+    }
+
+    // ── Typed getters — each maps to a key in config.properties ────────────
+
+    /** Application URL: "https://devadmin.damsdelhi.com/" */
+    public String getBaseUrl() {
+        return getString("base.url");
+    }
+
+    /** Browser name: "chrome" / "firefox" / "edge" */
+    public String getBrowser() {
+        // CLI override: -Dbrowser=firefox wins over config file value
+        String sysProp = System.getProperty("browser");
+        return (sysProp != null && !sysProp.isEmpty()) ? sysProp : getString("browser");
+    }
+
+    /** Whether to run browser invisibly (true on CI, false on local machine) */
+    public boolean isHeadless() {
+        String sysProp = System.getProperty("headless");
+        return (sysProp != null && !sysProp.isEmpty())
+                ? Boolean.parseBoolean(sysProp)
+                : getBoolean("headless");
+    }
+
+    /** Implicit wait duration (seconds) */
+    public int getImplicitWait() {
+        return getInt("implicit.wait.seconds");
+    }
+
+    /** Explicit (WebDriverWait) duration (seconds) */
+    public int getExplicitWait() {
+        return getInt("explicit.wait.seconds");
+    }
+
+    /** Page load timeout (seconds) */
+    public int getPageLoadTimeout() {
+        return getInt("page.load.timeout.seconds");
+    }
+
+    /** Directory where failure screenshots are saved */
+    public String getScreenshotDir() {
+        return getString("screenshot.dir");
+    }
+
+    /** Directory where the HTML report is saved */
+    public String getReportDir() {
+        return getString("report.dir");
+    }
+
+    /** Environment label shown in the report (QA / STAGING / PROD) */
+    public String getEnvironment() {
+        String sysProp = System.getProperty("env");
+        return (sysProp != null && !sysProp.isEmpty()) ? sysProp : getString("environment");
+    }
+
+    // ── Internal helpers ────────────────────────────────────────────────────
+
+    private String getString(String key) {
+        String value = properties.getProperty(key);
+        if (value == null || value.trim().isEmpty()) {
+            throw new RuntimeException("[Config] Missing key in config.properties: " + key);
+        }
+        return value.trim();
+    }
+
+    private int getInt(String key) {
+        try {
+            return Integer.parseInt(getString(key));
+        } catch (NumberFormatException e) {
+            throw new RuntimeException("[Config] Key '" + key + "' must be an integer.", e);
+        }
+    }
+
+    private boolean getBoolean(String key) {
+        return Boolean.parseBoolean(getString(key));
+    }
+}
 
