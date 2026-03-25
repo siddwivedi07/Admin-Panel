@@ -70,9 +70,11 @@ public class LoginTest extends BaseTest {
         report.logStep("TC_3", "Login", "STEP 3 \u2013 Click Login Button", step3Ok);
         Assert.assertTrue(step3Ok, "TC_3: Failed to click Login button");
 
-        // Wait for OTP form
-        Assert.assertTrue(loginPage.isOtpFormVisible(),
-                "OTP form did not appear after clicking Login");
+        // ── Wait for OTP form (uses its own extended timeout inside loginPage) ─
+        boolean otpFormVisible = loginPage.isOtpFormVisible();
+        Assert.assertTrue(otpFormVisible,
+                "OTP form did not appear after clicking Login. " +
+                "Check credentials in config.properties and that the app is reachable.");
 
         // ── TC_4 | STEP 4 – Enter OTP ────────────────────────────────────────
         boolean step4Ok = false;
@@ -101,7 +103,19 @@ public class LoginTest extends BaseTest {
         boolean allPassed = step1Ok && step2Ok && step3Ok && step4Ok && step5Ok;
         report.endTest(allPassed, finalShot);
 
-        // Final URL assertion – should have navigated away from the login page
+        // ── Final URL assertion – allow a few seconds for navigation to complete
+        try {
+            new org.openqa.selenium.support.ui.WebDriverWait(
+                    DriverManager.getDriver(), java.time.Duration.ofSeconds(15))
+                    .until(d -> {
+                        String u = d.getCurrentUrl();
+                        return !u.equals(config.getUrl())
+                                && !u.contains("login");
+                    });
+        } catch (Exception e) {
+            log.warn("Post-OTP URL navigation wait timed out: {}", e.getMessage());
+        }
+
         String url = DriverManager.getDriver().getCurrentUrl();
         log.info("Post-login URL: {}", url);
         Assert.assertFalse(
