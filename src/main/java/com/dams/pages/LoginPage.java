@@ -1,229 +1,154 @@
 package com.dams.pages;
 
-import com.dams.core.Config;
-import com.dams.driver.DriverFactory;
-import com.dams.report.ReportManager;
+import com.dams.base.BasePage;
 import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
-
-import java.time.Duration;
 
 /**
- * LoginPage.java — Page Object for the DAMS Admin Login Page
+ * LoginPage
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Page Object for the DAMS Admin login flow, which has two steps:
  *
- * RESPONSIBILITY:
- *   Contains ALL login-related scripts for the DAMS Admin Panel login flow:
- *     Step 1 → Navigate to the URL
- *     Step 2 → Enter Email
- *     Step 3 → Enter Password
- *     Step 4 → Click Login button
- *     Step 5 → Enter OTP (4-character field)
- *     Step 6 → Click Submit button
+ *   Step A – Credential form
+ *     1. Enter email
+ *     2. Enter password
+ *     3. Click "Login"
  *
- * PAGE OBJECT MODEL (POM) PATTERN:
- *   - Locators (By objects) are defined at the top as class fields
- *   - Methods represent user actions on this page
- *   - Test classes call these methods — they never use By/findElement directly
- *   - If the website HTML changes, only this file needs updating
+ *   Step B – OTP form (appears after successful credential submission)
+ *     4. Enter OTP
+ *     5. Click "Submit"
  *
- * LOCATOR TYPES USED:
- *   By.cssSelector → targets elements by CSS (fast, recommended for IDs/classes)
- *   By.xpath       → targets elements by XML path (powerful for complex conditions)
- *
- *   CSS  "#email"          → finds element with id="email"
- *   CSS  "#password"       → finds element with id="password"
- *   XPath //button[...]    → finds button containing specific class and text
- *   XPath //input[@aria-label='...'] → finds OTP fields by accessibility label
- *
- * EXPLICIT WAIT (WebDriverWait):
- *   Instead of Thread.sleep(), we use WebDriverWait with ExpectedConditions.
- *   This waits up to N seconds for a condition to be true, then proceeds.
- *   Much faster than fixed sleep, and more reliable on slow networks.
+ * All locators match the HTML provided in the requirements exactly.
  */
-public class LoginPage {
+public class LoginPage extends BasePage {
 
-    private final WebDriver driver;
-    private final WebDriverWait wait;
-
-    // ── Locators — Element Selectors ────────────────────────────────────────
-    // These match the exact HTML on https://devadmin.damsdelhi.com/
-
-    // Step 2: Email input field
-    // HTML: <input placeholder="Email" type="text" id="email" ...>
-    private final By emailInput = By.cssSelector("#email");
-
-    // Step 3: Password input field
-    // HTML: <input placeholder="******" type="password" id="password" ...>
-    private final By passwordInput = By.cssSelector("#password");
-
-    // Step 4: Login submit button
-    // HTML: <button type="submit" class="ant-btn ... ant-btn-primary ..."><span>Login</span></button>
-    private final By loginButton = By.xpath(
-        "//button[@type='submit' and contains(@class,'ant-btn-primary')][.//span[text()='Login']]"
-    );
-
-    // Step 5a: OTP input field (Ant Design OTP component — single input that accepts all 4 digits)
-    // HTML: <input aria-label="Please enter OTP character 1" ...>
-    // Note: Sending all 4 digits to character-1 field works because Ant Design
-    //       auto-distributes digits across all OTP character inputs.
-    private final By otpFirstChar = By.xpath(
-        "//input[@aria-label='Please enter OTP character 1']"
-    );
-
-    // Step 6: OTP Submit button
-    // HTML: <button type="submit" class="ant-btn ... ant-btn-primary ..." style="margin-top: 20px;"><span>Submit</span></button>
-    private final By submitOtpButton = By.xpath(
-        "//button[@type='submit' and contains(@class,'ant-btn-primary')][.//span[text()='Submit']]"
-    );
-
-    // ── Constructor ─────────────────────────────────────────────────────────
+    // ── Locators – Credential form ───────────────────────────────────────────
 
     /**
-     * Constructor: receives the driver, sets up explicit wait.
-     * @param driver  Active WebDriver instance from DriverFactory
+     * <input placeholder="Email" type="text" id="email"
+     *        aria-required="true" class="ant-input css-tjsggz" />
      */
-    public LoginPage(WebDriver driver) {
-        this.driver = driver;
-        this.wait   = new WebDriverWait(driver, Duration.ofSeconds(
-                          Config.getInstance().getExplicitWait()));
-    }
-
-    // ── Page Actions ─────────────────────────────────────────────────────────
+    private static final By EMAIL_INPUT =
+            By.cssSelector("input#email[placeholder='Email']");
 
     /**
-     * STEP 1 — Open Application URL
-     * Navigates the browser to the DAMS Admin Panel login page.
+     * <input placeholder="******" type="password" id="password"
+     *        aria-required="true" class="ant-input ant-input-lg css-tjsggz" />
      */
-    public void openLoginPage() {
-        String url = Config.getInstance().getBaseUrl();
-        driver.get(url);
-        ReportManager.logInfo("STEP 1 — Opened URL: " + url);
-        System.out.println("[LoginPage] Navigated to: " + url);
-    }
+    private static final By PASSWORD_INPUT =
+            By.cssSelector("input#password[type='password']");
 
     /**
-     * STEP 2 — Enter Email
-     * Waits for the email field to be visible, then types the email address.
+     * <button type="submit" class="ant-btn … ant-btn-lg ant-btn-block">
+     *   <span>Login</span>
+     * </button>
+     */
+    private static final By LOGIN_BUTTON =
+            By.cssSelector("button[type='submit'] span:not([style])");
+
+    // ── Locators – OTP form ──────────────────────────────────────────────────
+
+    /**
+     * The OTP input field.  Ant Design renders a single <input> inside the
+     * OTP step.  We target the first visible text/number input that is NOT
+     * the password field (which is already submitted at this point).
      *
-     * @param email  The email to enter (e.g., "07siddwivedi@gmail.com")
+     * Fallback: By.cssSelector("input[maxlength]") targets Ant OTP inputs.
+     */
+    private static final By OTP_INPUT =
+            By.cssSelector("input.ant-input[maxlength], input.ant-otp-input, input[type='text']:not(#email)");
+
+    /**
+     * <button type="submit" style="margin-top: 20px;" class="ant-btn … ant-btn-lg ant-btn-block">
+     *   <span>Submit</span>
+     * </button>
+     *
+     * Distinguished from the Login button by the inline margin-top style.
+     */
+    private static final By SUBMIT_BUTTON =
+            By.cssSelector("button[type='submit'][style*='margin-top']");
+
+    // ── Public API ───────────────────────────────────────────────────────────
+
+    /**
+     * Type the email address into the Email field.
+     *
+     * @param email e.g. "07siddwivedi@gmail.com"
      */
     public void enterEmail(String email) {
-        WebElement emailField = wait.until(
-            ExpectedConditions.visibilityOfElementLocated(emailInput));
-        emailField.clear();
-        emailField.sendKeys(email);
-        ReportManager.logPass("STEP 2 — Email entered: " + email);
-        System.out.println("[LoginPage] Email entered.");
+        log.info("Entering email: {}", email);
+        type(EMAIL_INPUT, email);
     }
 
     /**
-     * STEP 3 — Enter Password
-     * Finds the password field and types the password.
+     * Type the password into the Password field.
      *
-     * @param password  The password to enter (e.g., "Siddharth@123")
+     * @param password e.g. "Siddharth@123"
      */
     public void enterPassword(String password) {
-        WebElement passField = wait.until(
-            ExpectedConditions.visibilityOfElementLocated(passwordInput));
-        passField.clear();
-        passField.sendKeys(password);
-        ReportManager.logPass("STEP 3 — Password entered successfully.");
-        System.out.println("[LoginPage] Password entered.");
+        log.info("Entering password: [REDACTED]");
+        type(PASSWORD_INPUT, password);
     }
 
     /**
-     * STEP 4 — Click Login Button
-     * Waits for the Login button to be clickable, then clicks it.
-     * After click, the website sends an OTP to the registered mobile/email.
+     * Click the Login button (submits the credential form).
      */
-    public void clickLoginButton() {
-        wait.until(ExpectedConditions.elementToBeClickable(loginButton)).click();
-        ReportManager.logPass("STEP 4 — Login button clicked.");
-        System.out.println("[LoginPage] Login button clicked. Waiting for OTP screen...");
+    public void clickLogin() {
+        log.info("Clicking Login button");
+        // Use XPath to find the button containing the text "Login"
+        By loginBtn = By.xpath("//button[@type='submit'][.//span[text()='Login']]");
+        click(loginBtn);
     }
 
     /**
-     * STEP 5 — Enter OTP
-     * Waits for the OTP field to appear (after Login button click),
-     * then sends all 4 digits to the first character field.
-     * Ant Design OTP component auto-fills remaining fields.
+     * Type the OTP into the OTP input that appears after login.
      *
-     * @param otp  4-digit OTP string (e.g., "1980")
+     * @param otp e.g. "1980"
      */
     public void enterOtp(String otp) {
-        WebElement otpField = wait.until(
-            ExpectedConditions.visibilityOfElementLocated(otpFirstChar));
-        otpField.clear();
-        otpField.sendKeys(otp);
-        ReportManager.logPass("STEP 5 — OTP entered: " + otp);
-        System.out.println("[LoginPage] OTP entered: " + otp);
+        log.info("Entering OTP: {}", otp);
+        type(OTP_INPUT, otp);
     }
 
     /**
-     * STEP 6 — Click Submit (OTP Verification)
-     * Clicks the Submit button to verify the OTP.
-     * After success, the dashboard should load.
+     * Click the Submit button to complete OTP verification.
      */
-    public void clickSubmitOtp() {
-        wait.until(ExpectedConditions.elementToBeClickable(submitOtpButton)).click();
-        ReportManager.logPass("STEP 6 — OTP Submit button clicked.");
-        System.out.println("[LoginPage] OTP Submit clicked. Awaiting dashboard...");
+    public void clickSubmit() {
+        log.info("Clicking Submit button");
+        // XPath: button[type=submit] with inline margin-top style containing "Submit" span
+        By submitBtn = By.xpath(
+                "//button[@type='submit'][@style and contains(@style,'margin-top')][.//span[text()='Submit']]"
+        );
+        click(submitBtn);
     }
 
-    // ── Compound Action: Full Login Flow ─────────────────────────────────────
+    // ── Compound actions ─────────────────────────────────────────────────────
 
     /**
-     * Performs the complete login flow in sequence:
-     *   openLoginPage → enterEmail → enterPassword → clickLogin → enterOtp → clickSubmit
-     *
-     * Credentials are read from environment variables (GitHub Secrets in CI,
-     * or system environment on local machine). Falls back to provided defaults.
-     *
-     * @param email     Login email address
-     * @param password  Login password
-     * @param otp       4-digit OTP
+     * Full Step A: fill credentials and click Login.
      */
-    public void performFullLogin(String email, String password, String otp) {
-        openLoginPage();
+    public void performLogin(String email, String password) {
         enterEmail(email);
         enterPassword(password);
-        clickLoginButton();
+        clickLogin();
+    }
+
+    /**
+     * Full Step B: enter OTP and click Submit.
+     */
+    public void performOtpVerification(String otp) {
         enterOtp(otp);
-        clickSubmitOtp();
+        clickSubmit();
     }
 
-    // ── Verification Helpers ─────────────────────────────────────────────────
+    // ── State helpers ────────────────────────────────────────────────────────
 
-    /**
-     * Returns the current page URL.
-     * Used in tests to verify navigation to the dashboard after login.
-     */
-    public String getCurrentUrl() {
-        return driver.getCurrentUrl();
+    /** True when the OTP form is visible (used to assert page transition). */
+    public boolean isOtpFormVisible() {
+        return isDisplayed(OTP_INPUT);
     }
 
-    /**
-     * Returns the current page title.
-     * Used in tests to assert the correct page loaded.
-     */
-    public String getPageTitle() {
-        return driver.getTitle();
-    }
-
-    /**
-     * Checks whether the OTP input field is present and visible on screen.
-     * Useful for verifying the OTP step appeared after clicking Login.
-     */
-    public boolean isOtpFieldVisible() {
-        try {
-            wait.until(ExpectedConditions.visibilityOfElementLocated(otpFirstChar));
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
+    /** True when the credential form's email field is present. */
+    public boolean isLoginFormVisible() {
+        return isDisplayed(EMAIL_INPUT);
     }
 }
-
