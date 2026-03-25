@@ -1,118 +1,125 @@
 package com.dams.test;
 
 import com.dams.base.BaseTest;
+import com.dams.pages.LoginPage;
 import com.dams.report.ReportManager;
+import org.openqa.selenium.OutputType;
+import org.openqa.selenium.TakesScreenshot;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import com.dams.core.DriverManager;
+
 /**
- * LoginTest.java — Login Test Cases
+ * LoginTest
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Single TestNG test method that executes the full 5-step login + OTP flow and
+ * logs exactly 6 rows to the DAMS report (matching the reference screenshot):
  *
- * RESPONSIBILITY:
- *   Contains @Test methods that verify the DAMS Admin Panel login flow.
- *   Each test inherits browser setup, login, and teardown from BaseTest.
+ *   TC_1 | Login     | STEP 2 – Enter Email
+ *   TC_2 | Login     | STEP 2 – Enter Password
+ *   TC_3 | Login     | STEP 3 – Click Login Button
+ *   TC_4 | Login     | STEP 4 – Enter OTP
+ *   TC_5 | Login     | STEP 5 – Click OTP Submit
+ *   TC_6 | Execution | adminLoginTest            ← with View screenshot
  *
- * HOW IT WORKS:
- *   By extending BaseTest:
- *     - Browser opens and login completes BEFORE each @Test (via @BeforeMethod)
- *     - Browser closes AFTER each @Test (via @AfterMethod)
- *     - HTML report is initialised/flushed by @BeforeSuite/@AfterSuite
- *
- *   This means every @Test here starts with the user already logged in
- *   and on the DAMS dashboard.
- *
- * WHAT WE ASSERT:
- *   After a successful login+OTP flow, the browser should:
- *   1. Land on a URL containing "devadmin.damsdelhi.com" (still on the right domain)
- *   2. NOT be on the login page anymore (URL should not end at "/" or "/login")
- *   3. Have a non-empty page title
- *
- * ADDING MORE TESTS:
- *   Add new @Test methods to this class.
- *   Each one automatically gets a fresh browser + fresh login.
+ * Step 1 (open URL) is handled by BaseTest.@BeforeMethod.
  */
 public class LoginTest extends BaseTest {
 
-    /**
-     * TEST 1 — Verify Successful Login and Dashboard Navigation
-     *
-     * Precondition (handled by @BeforeMethod in BaseTest):
-     *   - Browser opened on https://devadmin.damsdelhi.com/
-     *   - Email, Password, Login, OTP, Submit — all done
-     *
-     * What this test verifies:
-     *   - After full login, we are on the correct domain (devadmin.damsdelhi.com)
-     *   - We have moved past the login page (URL does not end at root "/")
-     *   - The page has a title (dashboard loaded, not a blank/error page)
-     */
-    @Test(description = "Verify user is redirected to dashboard after valid login and OTP")
-    public void verifySuccessfulLoginNavigatesToDashboard() {
+    private LoginPage loginPage;
 
-        // ── Gather current state ─────────────────────────────────────────
-        String currentUrl   = loginPage.getCurrentUrl();
-        String currentTitle = loginPage.getPageTitle();
+    @Test(description = "adminLoginTest – Login + OTP end-to-end flow")
+    public void adminLoginTest() {
 
-        System.out.println("[LoginTest] Current URL:   " + currentUrl);
-        System.out.println("[LoginTest] Current Title: " + currentTitle);
+        ReportManager report = ReportManager.getInstance();
+        report.startTest("adminLoginTest");
 
-        ReportManager.logInfo("Current URL after login: "   + currentUrl);
-        ReportManager.logInfo("Current Page Title: "         + currentTitle);
+        loginPage = new LoginPage();
 
-        // ── Assertion 1: Still on the correct domain ─────────────────────
-        Assert.assertTrue(
-            currentUrl.contains("devadmin.damsdelhi.com"),
-            "URL should contain 'devadmin.damsdelhi.com'. Actual: " + currentUrl
-        );
-        ReportManager.logPass("ASSERTION 1 PASSED — URL contains 'devadmin.damsdelhi.com'");
+        // ── TC_1 | STEP 2 – Enter Email ──────────────────────────────────────
+        boolean step1Ok = false;
+        try {
+            loginPage.enterEmail(config.getEmail());
+            step1Ok = true;
+        } catch (Exception e) {
+            log.error("TC_1 failed: {}", e.getMessage());
+        }
+        report.logStep("TC_1", "Login", "STEP 2 \u2013 Enter Email", step1Ok);
+        Assert.assertTrue(step1Ok, "TC_1: Failed to enter email");
 
-        // ── Assertion 2: No longer on the login root page ─────────────────
-        // After login, URL should include a path beyond just "/"
+        // ── TC_2 | STEP 2 – Enter Password ───────────────────────────────────
+        boolean step2Ok = false;
+        try {
+            loginPage.enterPassword(config.getPassword());
+            step2Ok = true;
+        } catch (Exception e) {
+            log.error("TC_2 failed: {}", e.getMessage());
+        }
+        report.logStep("TC_2", "Login", "STEP 2 \u2013 Enter Password", step2Ok);
+        Assert.assertTrue(step2Ok, "TC_2: Failed to enter password");
+
+        // ── TC_3 | STEP 3 – Click Login Button ───────────────────────────────
+        boolean step3Ok = false;
+        try {
+            loginPage.clickLogin();
+            step3Ok = true;
+        } catch (Exception e) {
+            log.error("TC_3 failed: {}", e.getMessage());
+        }
+        report.logStep("TC_3", "Login", "STEP 3 \u2013 Click Login Button", step3Ok);
+        Assert.assertTrue(step3Ok, "TC_3: Failed to click Login button");
+
+        // Wait for OTP form
+        Assert.assertTrue(loginPage.isOtpFormVisible(),
+                "OTP form did not appear after clicking Login");
+
+        // ── TC_4 | STEP 4 – Enter OTP ────────────────────────────────────────
+        boolean step4Ok = false;
+        try {
+            loginPage.enterOtp(config.getOtp());
+            step4Ok = true;
+        } catch (Exception e) {
+            log.error("TC_4 failed: {}", e.getMessage());
+        }
+        report.logStep("TC_4", "Login", "STEP 4 \u2013 Enter OTP", step4Ok);
+        Assert.assertTrue(step4Ok, "TC_4: Failed to enter OTP");
+
+        // ── TC_5 | STEP 5 – Click OTP Submit ─────────────────────────────────
+        boolean step5Ok = false;
+        try {
+            loginPage.clickSubmit();
+            step5Ok = true;
+        } catch (Exception e) {
+            log.error("TC_5 failed: {}", e.getMessage());
+        }
+        report.logStep("TC_5", "Login", "STEP 5 \u2013 Click OTP Submit", step5Ok);
+        Assert.assertTrue(step5Ok, "TC_5: Failed to click OTP Submit");
+
+        // ── TC_6 | Execution – overall with screenshot ────────────────────────
+        byte[] finalShot = captureCurrentScreenshot();
+        boolean allPassed = step1Ok && step2Ok && step3Ok && step4Ok && step5Ok;
+        report.endTest(allPassed, finalShot);
+
+        // Final URL assertion – should have navigated away from the login page
+        String url = DriverManager.getDriver().getCurrentUrl();
+        log.info("Post-login URL: {}", url);
         Assert.assertFalse(
-            currentUrl.endsWith("/") && !currentUrl.contains("dashboard"),
-            "URL should navigate beyond the root login page. Actual: " + currentUrl
+                url.equals(config.getUrl()) || url.contains("login"),
+                "Should be on dashboard after login. Actual URL: " + url
         );
-        ReportManager.logPass("ASSERTION 2 PASSED — Navigated past the login page");
-
-        // ── Assertion 3: Page title is not empty ──────────────────────────
-        Assert.assertNotNull(currentTitle,  "Page title should not be null.");
-        Assert.assertFalse(currentTitle.isEmpty(), "Page title should not be empty.");
-        ReportManager.logPass("ASSERTION 3 PASSED — Page title is: '" + currentTitle + "'");
-
-        System.out.println("[LoginTest] ✔ verifySuccessfulLoginNavigatesToDashboard — PASSED");
     }
 
-    /**
-     * TEST 2 — Verify OTP Field Appeared After Clicking Login
-     *
-     * This test re-does the login steps individually to verify that:
-     *   - After entering credentials and clicking Login, the OTP screen appears
-     *
-     * NOTE: BaseTest @BeforeMethod already does the FULL login.
-     *       So by the time this test runs, we're on the dashboard.
-     *       This test verifies the post-login state only.
-     *
-     *       To test mid-flow OTP visibility, you'd need a separate flow that
-     *       navigates back to login — shown here as a URL-based assertion.
-     */
-    @Test(description = "Verify dashboard URL confirms OTP was accepted and login succeeded")
-    public void verifyDashboardUrlAfterOtpSubmit() {
+    // ── Screenshot override ───────────────────────────────────────────────────
 
-        String url = loginPage.getCurrentUrl();
-        ReportManager.logInfo("Post-OTP URL: " + url);
-
-        System.out.println("[LoginTest] Post-OTP URL: " + url);
-
-        // After OTP submit, the URL should not be the bare root login URL
-        boolean loggedIn = url.contains("devadmin.damsdelhi.com")
-                           && !url.equals("https://devadmin.damsdelhi.com/");
-
-        Assert.assertTrue(
-            loggedIn,
-            "After OTP submit, user should be past the login page. Actual URL: " + url
-        );
-
-        ReportManager.logPass("ASSERTION PASSED — OTP accepted, dashboard URL confirmed: " + url);
-        System.out.println("[LoginTest] ✔ verifyDashboardUrlAfterOtpSubmit — PASSED");
+    @Override
+    protected byte[] captureCurrentScreenshot() {
+        try {
+            return ((TakesScreenshot) DriverManager.getDriver())
+                    .getScreenshotAs(OutputType.BYTES);
+        } catch (Exception e) {
+            log.warn("Screenshot capture failed: {}", e.getMessage());
+            return null;
+        }
     }
 }
-
