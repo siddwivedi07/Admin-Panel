@@ -87,7 +87,7 @@ public abstract class BasePage {
             return wait.waitForVisible(locator).isDisplayed();
         } catch (Exception e) {
             return false;
-        } 
+        }
     }
 
     // ── Screenshot ───────────────────────────────────────────────────────────
