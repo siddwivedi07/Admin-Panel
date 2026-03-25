@@ -328,7 +328,7 @@ public class ReportManager {
           .modal-img{max-width:100%;display:block;border-radius:8px;margin-top:24px;}
         """;
     }
-
+ 
     private String esc(String s) {
         if (s == null) return "";
         return s.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;");
