@@ -63,7 +63,7 @@ public class WaitUtils {
 
     // ── URL / Title ──────────────────────────────────────────────────────────
 
-    /** Wait until the page URL contains the given substring. */
+    /** Wait until the page URL contains the given substring. */ 
     public void waitForUrlContains(String urlFragment) {
         log.debug("Waiting for URL to contain: {}", urlFragment);
         wait.until(ExpectedConditions.urlContains(urlFragment));
