@@ -2,15 +2,23 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-                             http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
     <modelVersion>4.0.0</modelVersion>
 
+    <!-- ═══════════════════════════════════════════════════════════
+         Project Info
+    ═══════════════════════════════════════════════════════════ -->
     <groupId>com.dams</groupId>
-    <artifactId>admin-panel-selenium</artifactId>
+    <artifactId>dams-admin-selenium</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
-    <name>DAMS Admin Panel Selenium Tests</name>
+    <n>DAMS Delhi Admin Panel — Selenium Test Suite</n>
+    <description>Selenium Java 17 automation for DAMS Delhi Admin Login</description>
 
+    <!-- ═══════════════════════════════════════════════════════════
+         Global Properties
+    ═══════════════════════════════════════════════════════════ -->
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
@@ -19,82 +27,87 @@
         <!-- Dependency Versions -->
         <selenium.version>4.18.1</selenium.version>
         <testng.version>7.9.0</testng.version>
-        <extentreports.version>5.1.1</extentreports.version>
         <webdrivermanager.version>5.7.0</webdrivermanager.version>
-        <log4j.version>2.22.1</log4j.version>
+        <extentreports.version>5.1.1</extentreports.version>
     </properties>
 
+    <!-- ═══════════════════════════════════════════════════════════
+         Dependencies
+    ═══════════════════════════════════════════════════════════ -->
     <dependencies>
 
-        <!-- Selenium Java -->
+        <!-- 1. Selenium WebDriver — browser automation -->
         <dependency>
             <groupId>org.seleniumhq.selenium</groupId>
             <artifactId>selenium-java</artifactId>
             <version>${selenium.version}</version>
         </dependency>
 
-        <!-- WebDriverManager – auto-downloads ChromeDriver -->
+        <!-- 2. WebDriverManager — ChromeDriver auto-download (no manual setup) -->
         <dependency>
             <groupId>io.github.bonigarcia</groupId>
             <artifactId>webdrivermanager</artifactId>
             <version>${webdrivermanager.version}</version>
         </dependency>
 
-        <!-- TestNG -->
+        <!-- 3. TestNG — test framework (@Test, @BeforeMethod, etc.) -->
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
             <version>${testng.version}</version>
         </dependency>
 
-        <!-- ExtentReports -->
+        <!-- 4. ExtentReports — HTML reports with screenshots -->
         <dependency>
             <groupId>com.aventstack</groupId>
             <artifactId>extentreports</artifactId>
             <version>${extentreports.version}</version>
         </dependency>
 
-        <!-- Log4j2 -->
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-api</artifactId>
-            <version>${log4j.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-core</artifactId>
-            <version>${log4j.version}</version>
-        </dependency>
-
     </dependencies>
 
+    <!-- ═══════════════════════════════════════════════════════════
+         Build Plugins
+    ═══════════════════════════════════════════════════════════ -->
     <build>
+        <!-- Source directories -->
+        <sourceDirectory>src/main/java</sourceDirectory>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+        </resources>
+
         <plugins>
 
-            <!-- Maven Compiler Plugin – Java 17 -->
+            <!-- Maven Compiler Plugin — Java 17 -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.12.1</version>
+                <version>3.11.0</version>
                 <configuration>
                     <source>17</source>
                     <target>17</target>
+                    <encoding>UTF-8</encoding>
                 </configuration>
             </plugin>
 
-            <!-- Maven Surefire Plugin – runs TestNG suite -->
+            <!-- Maven Surefire Plugin — TestNG runner -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.2.5</version>
                 <configuration>
+                    <!-- testng.xml se run karo -->
                     <suiteXmlFiles>
                         <suiteXmlFile>testng.xml</suiteXmlFile>
                     </suiteXmlFiles>
-                    <!-- Keep process alive so extent report is flushed -->
-                    <forkCount>1</forkCount>
-                    <reuseForks>true</reuseForks>
-                    <argLine>--add-opens java.base/java.lang=ALL-UNNAMED</argLine>
+                    <!-- CI mein headless override -->
+                    <systemPropertyVariables>
+                        <headless>${headless}</headless>
+                    </systemPropertyVariables>
+                    <!-- Surefire reports target/surefire-reports/ mein -->
+                    <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
                 </configuration>
             </plugin>
 
