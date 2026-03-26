@@ -3,18 +3,25 @@ name: DAMS Selenium Test
 on:
   push:
     branches:
-      - main  
-  workflow_dispatch:         
-env: 
+      - main
+  workflow_dispatch:           
+
+env:
+  CI: "true"                   
+
+
 jobs:
   run-selenium-test:
     name: Run Selenium Test (main)
     runs-on: ubuntu-latest
 
     steps:
+
+      # ── Step 1: Checkout ──────────────────────────────────────────────────
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      # ── Step 2: Java JDK 17 ───────────────────────────────────────────────
       - name: Set up Java JDK 17
         uses: actions/setup-java@v4
         with:
@@ -22,23 +29,39 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      # ── Step 3: Install Google Chrome ─────────────────────────────────────
       - name: Install Google Chrome
         run: |
           sudo apt-get update -y
           sudo apt-get install -y wget gnupg2 unzip curl
+
           wget -q -O - https://dl.google.com/linux/linux_signing_key.pub \
             | sudo gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg
 
+          echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] \
+            http://dl.google.com/linux/chrome/deb/ stable main" \
+            | sudo tee /etc/apt/sources.list.d/google-chrome.list
+
+          sudo apt-get update -y
+          sudo apt-get install -y google-chrome-stable
+          google-chrome --version
+
+      # ── Step 4: Build & Run Selenium Tests ────────────────────────────────
       - name: Build & Run Selenium Tests
         run: mvn clean test --no-transfer-progress
-      
+        env:
+          CI: "true"
+
+      # ── Step 5: Upload DAMS Test Artifact ─────────────────────────────────
       - name: Upload DAMS Test Artifact
-        if: always() 
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: dams-selenium-artifact
           path: |
             target/surefire-reports/
             target/*.jar
-            screenshots/
+            test-output/reports/
+            test-output/screenshots/
+            test-output/logs/
           retention-days: 30
