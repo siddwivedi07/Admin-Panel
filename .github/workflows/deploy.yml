@@ -3,7 +3,7 @@ name: DAMS Selenium Test
 on:
   push:
     branches:
-      - main 
+      - main  
   workflow_dispatch:         
 env:
 jobs:
