@@ -1,18 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
 
 <!--
-  DAMS Admin Panel – TestNG Suite
-  Runs all login / OTP tests in sequence (thread-count=1).
-  For parallel execution increase thread-count and set parallel="methods".
+  testng.xml  —  DAMS Delhi Test Suite
+  Isme define hota hai: kaunsi test classes run hongi, order, groups.
+  mvn clean test → isi file ko follow karta hai.
 -->
-<suite name="DAMS-Admin-Suite" verbose="2" thread-count="1">
+<suite name="DAMS Admin Panel — Full Test Suite" verbose="2" parallel="none">
 
     <listeners>
-        <!-- Built-in TestNG listener that produces surefire-compatible XML -->
+        <!-- TestNG built-in listener — console output improve karta hai -->
+        <listener class-name="org.testng.reporters.SuiteHTMLReporter"/>
     </listeners>
 
-    <test name="Login and OTP Flow">
+    <test name="DAMS Login Tests">
         <classes>
             <class name="com.dams.test.LoginTest"/>
         </classes>
