@@ -6,58 +6,47 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <!-- ═══════════════════════════════════════════════════════════
-         Project Info
-    ═══════════════════════════════════════════════════════════ -->
     <groupId>com.dams</groupId>
     <artifactId>dams-admin-selenium</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
-    <n>DAMS Delhi Admin Panel — Selenium Test Suite</n>
+    <name>DAMS Delhi Admin Panel - Selenium Test Suite</name>
     <description>Selenium Java 17 automation for DAMS Delhi Admin Login</description>
 
-    <!-- ═══════════════════════════════════════════════════════════
-         Global Properties
-    ═══════════════════════════════════════════════════════════ -->
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-
-        <!-- Dependency Versions -->
         <selenium.version>4.18.1</selenium.version>
         <testng.version>7.9.0</testng.version>
         <webdrivermanager.version>5.7.0</webdrivermanager.version>
         <extentreports.version>5.1.1</extentreports.version>
     </properties>
 
-    <!-- ═══════════════════════════════════════════════════════════
-         Dependencies
-    ═══════════════════════════════════════════════════════════ -->
     <dependencies>
 
-        <!-- 1. Selenium WebDriver — browser automation -->
+        <!-- 1. Selenium WebDriver -->
         <dependency>
             <groupId>org.seleniumhq.selenium</groupId>
             <artifactId>selenium-java</artifactId>
             <version>${selenium.version}</version>
         </dependency>
 
-        <!-- 2. WebDriverManager — ChromeDriver auto-download (no manual setup) -->
+        <!-- 2. WebDriverManager - ChromeDriver auto-download -->
         <dependency>
             <groupId>io.github.bonigarcia</groupId>
             <artifactId>webdrivermanager</artifactId>
             <version>${webdrivermanager.version}</version>
         </dependency>
 
-        <!-- 3. TestNG — test framework (@Test, @BeforeMethod, etc.) -->
+        <!-- 3. TestNG - test framework -->
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
             <version>${testng.version}</version>
         </dependency>
 
-        <!-- 4. ExtentReports — HTML reports with screenshots -->
+        <!-- 4. ExtentReports - HTML reports with screenshots -->
         <dependency>
             <groupId>com.aventstack</groupId>
             <artifactId>extentreports</artifactId>
@@ -66,11 +55,7 @@
 
     </dependencies>
 
-    <!-- ═══════════════════════════════════════════════════════════
-         Build Plugins
-    ═══════════════════════════════════════════════════════════ -->
     <build>
-        <!-- Source directories -->
         <sourceDirectory>src/main/java</sourceDirectory>
         <resources>
             <resource>
@@ -80,7 +65,7 @@
 
         <plugins>
 
-            <!-- Maven Compiler Plugin — Java 17 -->
+            <!-- Maven Compiler Plugin - Java 17 -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -92,21 +77,18 @@
                 </configuration>
             </plugin>
 
-            <!-- Maven Surefire Plugin — TestNG runner -->
+            <!-- Maven Surefire Plugin - TestNG runner -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.2.5</version>
                 <configuration>
-                    <!-- testng.xml se run karo -->
                     <suiteXmlFiles>
                         <suiteXmlFile>testng.xml</suiteXmlFile>
                     </suiteXmlFiles>
-                    <!-- CI mein headless override -->
                     <systemPropertyVariables>
                         <headless>${headless}</headless>
                     </systemPropertyVariables>
-                    <!-- Surefire reports target/surefire-reports/ mein -->
                     <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
                 </configuration>
             </plugin>
