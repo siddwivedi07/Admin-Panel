@@ -5,7 +5,7 @@ on:
     branches:
       - main  
   workflow_dispatch:         
-env:
+env: 
 jobs:
   run-selenium-test:
     name: Run Selenium Test (main)
