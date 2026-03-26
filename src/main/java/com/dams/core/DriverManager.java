@@ -1,89 +1,124 @@
 package com.dams.core;
 
+// ══════════════════════════════════════════════════════════════════════════════
+//  DriverManager.java  —  DAMS Driver Layer
+//  ──────────────────────────────────────────────────────────────────────────
+//  ✅ Kya karta hai?
+//     WebDriver instance create, manage aur close karta hai.
+//     ThreadLocal use karta hai — parallel tests mein safe hai.
+//
+//  ✅ Kyu zaruri hai?
+//     Browser setup ka logic ek jagah — BaseTest ya koi bhi class
+//     seedha getDriver() call kare.
+//
+//  ✅ Real life example:
+//     WebDriver driver = DriverManager.getDriver();
+//     driver.get("https://...");
+// ══════════════════════════════════════════════════════════════════════════════
+
 import io.github.bonigarcia.wdm.WebDriverManager;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 
 import java.time.Duration;
 
-/**
- * DriverManager
- * ─────────────────────────────────────────────────────────────────────────────
- * Thread-safe WebDriver factory.  Uses a ThreadLocal so parallel test suites
- * each get their own driver instance without sharing state.
- *
- * Only Chrome is required for this project; other browsers can be added later.
- */
 public class DriverManager {
 
-    private static final Logger log = LogManager.getLogger(DriverManager.class);
+    // ThreadLocal — har thread ka apna driver (parallel execution safe)
     private static final ThreadLocal<WebDriver> driverThread = new ThreadLocal<>();
 
-    // ── Initialise ───────────────────────────────────────────────────────────
+    // Private constructor — koi instance nahi banega (utility class)
+    private DriverManager() {}
+
+    // ──────────────────────────────────────────────────────────────────────────
+    //  Driver initialize karo
+    // ──────────────────────────────────────────────────────────────────────────
     public static void initDriver() {
-        ConfigReader cfg = ConfigReader.getInstance();
-        String browser = cfg.getBrowser().toLowerCase();
-
-        WebDriver driver;
-
-        switch (browser) {
-            case "chrome" -> {
-                WebDriverManager.chromedriver().setup();
-                ChromeOptions options = buildChromeOptions(cfg.isHeadless());
-                driver = new ChromeDriver(options);
-                log.info("ChromeDriver initialised (headless={})", cfg.isHeadless());
-            }
-            default -> throw new RuntimeException("Unsupported browser: " + browser);
+        if (driverThread.get() == null) {
+            WebDriver driver = createDriver();
+            driverThread.set(driver);
+            System.out.println("[DRIVER] ✔ ChromeDriver initialized. Headless=" + ConfigReader.isHeadless());
         }
-
-        // Global timeouts
-        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(cfg.getImplicitWait()));
-        driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(cfg.getPageLoadTimeout()));
-        driver.manage().window().maximize();
-
-        driverThread.set(driver);
     }
 
-    // ── Accessor ─────────────────────────────────────────────────────────────
+    // ──────────────────────────────────────────────────────────────────────────
+    //  Driver instance lo (null nahi hoga agar initDriver call hua ho)
+    // ──────────────────────────────────────────────────────────────────────────
     public static WebDriver getDriver() {
-        WebDriver driver = driverThread.get();
-        if (driver == null) {
-            throw new IllegalStateException("WebDriver not initialised. Call DriverManager.initDriver() first.");
+        if (driverThread.get() == null) {
+            initDriver();
         }
-        return driver;
+        return driverThread.get();
     }
 
-    // ── Teardown ─────────────────────────────────────────────────────────────
+    // ──────────────────────────────────────────────────────────────────────────
+    //  Driver band karo + ThreadLocal clean karo (memory leak avoid)
+    // ──────────────────────────────────────────────────────────────────────────
     public static void quitDriver() {
         WebDriver driver = driverThread.get();
         if (driver != null) {
-            driver.quit();
-            driverThread.remove();
-            log.info("WebDriver quit and ThreadLocal cleared.");
+            try {
+                driver.quit();
+                System.out.println("[DRIVER] ✔ Browser closed, memory cleaned.");
+            } catch (Exception e) {
+                System.err.println("[DRIVER] ⚠ Error closing driver: " + e.getMessage());
+            } finally {
+                driverThread.remove();  // ThreadLocal se hata do — memory clean
+            }
         }
     }
 
-    // ── Private helpers ──────────────────────────────────────────────────────
-    private static ChromeOptions buildChromeOptions(boolean headless) {
+    // ──────────────────────────────────────────────────────────────────────────
+    //  Private: ChromeDriver create karna with all options
+    // ──────────────────────────────────────────────────────────────────────────
+    private static WebDriver createDriver() {
+        // WebDriverManager automatically sahi ChromeDriver download karta hai
+        WebDriverManager.chromedriver().setup();
+
+        ChromeOptions options = buildChromeOptions();
+        WebDriver driver = new ChromeDriver(options);
+
+        // Timeouts set karo
+        driver.manage().timeouts().pageLoadTimeout(
+            Duration.ofSeconds(ConfigReader.getPageLoadTimeout())
+        );
+        driver.manage().timeouts().implicitlyWait(
+            Duration.ofSeconds(ConfigReader.getImplicitWait())
+        );
+        driver.manage().window().maximize();
+
+        return driver;
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    //  Private: ChromeOptions build karna
+    // ──────────────────────────────────────────────────────────────────────────
+    private static ChromeOptions buildChromeOptions() {
         ChromeOptions options = new ChromeOptions();
 
+        // CI environment ya config se headless true ho to headless mode
+        boolean headless = ConfigReader.isHeadless() || isCIEnvironment();
         if (headless) {
-            options.addArguments("--headless=new");   // Selenium 4 headless flag
+            options.addArguments("--headless=new");
+            options.addArguments("--disable-gpu");
+            System.out.println("[DRIVER] Running in HEADLESS mode (CI/config).");
         }
 
-        options.addArguments(
-                "--no-sandbox",
-                "--disable-dev-shm-usage",
-                "--disable-gpu",
-                "--window-size=1920,1080",
-                "--disable-extensions",
-                "--disable-popup-blocking",
-                "--ignore-certificate-errors"
-        );
+        // Common stable options
+        options.addArguments("--no-sandbox");
+        options.addArguments("--disable-dev-shm-usage");
+        options.addArguments("--window-size=1920,1080");
+        options.addArguments("--remote-allow-origins=*");
+        options.addArguments("--disable-extensions");
+        options.addArguments("--disable-popup-blocking");
+        options.addArguments("--disable-notifications");
 
         return options;
+    }
+
+    // GitHub Actions CI detect karna
+    private static boolean isCIEnvironment() {
+        return "true".equalsIgnoreCase(System.getenv("CI"));
     }
 }
