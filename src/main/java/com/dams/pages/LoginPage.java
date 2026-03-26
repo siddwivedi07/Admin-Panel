@@ -1,195 +1,173 @@
 package com.dams.pages;
 
-import com.dams.base.BasePage;
-import org.openqa.selenium.By;
-import org.openqa.selenium.JavascriptExecutor;
+// ══════════════════════════════════════════════════════════════════════════════
+//  LoginPage.java  —  DAMS Pages Layer  (Page Object Model)
+//  ──────────────────────────────────────────────────────────────────────────
+//  ✅ Kya hai?
+//     Login page ke saare elements aur actions ek jagah.
+//     Page Object Model (POM) design pattern.
+//
+//  ✅ Kyu zaruri hai?
+//     UI change ho (element ka ID/class badal jaye) →
+//     SIRF YAHAN CHANGE KARO, test file mein kuch nahi badlega.
+//
+//  ✅ Kya hota hai?
+//     @FindBy — WebElements (locators)
+//     Methods  — Actions (click, type, etc.)
+//
+//  ✅ Usage:
+//     LoginPage lp = new LoginPage(driver);
+//     lp.enterEmail("test@test.com");
+//     lp.clickLogin();
+// ══════════════════════════════════════════════════════════════════════════════
+
+import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.FindBy;
+import org.openqa.selenium.support.PageFactory;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
-import java.util.List;
 
-/**
- * LoginPage
- * ─────────────────────────────────────────────────────────────────────────────
- * Page Object for the DAMS Admin login flow, which has two steps:
- *
- *   Step A – Credential form
- *     1. Enter email
- *     2. Enter password
- *     3. Click "Login"
- *
- *   Step B – OTP form (appears after successful credential submission)
- *     4. Enter OTP
- *     5. Click "Submit"
- */
-public class LoginPage extends BasePage {
+public class LoginPage {
 
-    // ── Locators – Credential form ───────────────────────────────────────────
+    private final WebDriver     driver;
+    private final WebDriverWait wait;
 
-    private static final By EMAIL_INPUT    = By.cssSelector("input#email");
-    private static final By PASSWORD_INPUT = By.cssSelector("input#password");
+    // ──────────────────────────────────────────────────────────────────────────
+    //  @FindBy — Page Elements (locators)
+    //  Agar UI badal jaye to SIRF YAHAN locator update karo
+    // ──────────────────────────────────────────────────────────────────────────
 
-    /**
-     * Login button matched by visible text – avoids fragile span:not([style]) tricks.
-     */
-    private static final By LOGIN_BUTTON =
-            By.xpath("//button[@type='submit'][.//span[normalize-space()='Login']]");
+    // Step 2: Email input field
+    @FindBy(css = "input#email[placeholder='Email']")
+    private WebElement emailInput;
 
-    // ── Locators – OTP form ──────────────────────────────────────────────────
+    // Step 3: Password input field
+    @FindBy(css = "input#password[placeholder='******']")
+    private WebElement passwordInput;
 
-    /**
-     * OTP form indicator: any element that only exists on the OTP step.
-     * Covers:
-     *   • Ant Design 5.x individual OTP cells  (maxlength="1")
-     *   • Single OTP field                      (maxlength="4..8")
-     *   • An explicit #otp id
-     *   • A heading / label containing "OTP" text
-     */
-    private static final By OTP_FORM_INDICATOR = By.xpath(
-            "//*["
-            + "self::input[@maxlength='1'][not(@type='password')] "
-            + "or self::input[@maxlength='4'][not(@type='password')] "
-            + "or self::input[@maxlength='6'][not(@type='password')] "
-            + "or self::input[@id='otp'] "
-            + "or self::input[contains(@class,'ant-otp')] "
-            + "or self::*[contains(normalize-space(),'OTP') "
-            + "           and not(self::script) and not(self::style)]]"
-    );
+    // Step 4: Login button
+    @FindBy(xpath = "//button[@type='submit']//span[normalize-space()='Login']/..")
+    private WebElement loginButton;
 
-    /**
-     * First OTP input cell (for sending keys).
-     */
-    private static final By OTP_INPUT_FIRST = By.xpath(
-            "(//input[@maxlength='1'][not(@type='password')] "
-            + "| //input[@maxlength='4'][not(@type='password')] "
-            + "| //input[@maxlength='6'][not(@type='password')] "
-            + "| //input[@id='otp'] "
-            + "| //input[contains(@class,'ant-otp')])[1]"
-    );
+    // Step 5: OTP input field
+    @FindBy(xpath = "(//input[@type='text' or @type='number' or @type='tel'])[not(@id='email') and not(@id='password')]")
+    private WebElement otpInput;
 
-    /** Submit button matched by visible text. */
-    private static final By SUBMIT_BUTTON =
-            By.xpath("//button[@type='submit'][.//span[normalize-space()='Submit']]");
+    // Step 5: Submit button (OTP submit)
+    @FindBy(xpath = "//button[@type='submit']//span[normalize-space()='Submit']/..")
+    private WebElement submitButton;
 
-    /** Extra wait time for OTP form to appear (server round-trip). */
-    private static final int OTP_FORM_TIMEOUT_SEC = 30;
+    // Error message (negative test mein use hoga)
+    @FindBy(css = ".ant-form-item-explain-error, .ant-alert-message, [class*='error']")
+    private WebElement errorMessage;
 
-    // ── Public API ───────────────────────────────────────────────────────────
-
-    public void enterEmail(String email) {
-        log.info("Entering email: {}", email);
-        type(EMAIL_INPUT, email);
+    // ──────────────────────────────────────────────────────────────────────────
+    //  Constructor — PageFactory initialize karta hai
+    // ──────────────────────────────────────────────────────────────────────────
+    public LoginPage(WebDriver driver) {
+        this.driver = driver;
+        this.wait   = new WebDriverWait(driver, Duration.ofSeconds(20));
+        // PageFactory @FindBy elements ko initialize karta hai
+        PageFactory.initElements(driver, this);
     }
 
-    public void enterPassword(String password) {
-        log.info("Entering password: [REDACTED]");
-        type(PASSWORD_INPUT, password);
+    // ──────────────────────────────────────────────────────────────────────────
+    //  Actions — Page par jo karna hai
+    // ──────────────────────────────────────────────────────────────────────────
+
+    /** Step 2: Email field mein email type karo */
+    public LoginPage enterEmail(String email) {
+        wait.until(ExpectedConditions.visibilityOf(emailInput));
+        emailInput.clear();
+        emailInput.sendKeys(email);
+        System.out.println("[LoginPage] Email entered: " + email);
+        return this;  // Method chaining support
     }
 
-    /**
-     * Click the Login button; falls back to JS click if intercepted.
-     */
-    public void clickLogin() {
-        log.info("Clicking Login button");
+    /** Step 3: Password field mein password type karo */
+    public LoginPage enterPassword(String password) {
+        wait.until(ExpectedConditions.visibilityOf(passwordInput));
+        passwordInput.clear();
+        passwordInput.sendKeys(password);
+        System.out.println("[LoginPage] Password entered.");
+        return this;
+    }
+
+    /** Step 4: Login button click karo */
+    public LoginPage clickLogin() {
+        wait.until(ExpectedConditions.elementToBeClickable(loginButton));
+        loginButton.click();
+        System.out.println("[LoginPage] Login button clicked.");
+        return this;
+    }
+
+    /** Step 5: OTP field mein OTP type karo */
+    public LoginPage enterOtp(String otp) {
+        wait.until(ExpectedConditions.visibilityOf(otpInput));
+        otpInput.clear();
+        otpInput.sendKeys(otp);
+        System.out.println("[LoginPage] OTP entered: " + otp);
+        return this;
+    }
+
+    /** Step 5: Submit button click karo */
+    public LoginPage clickSubmit() {
+        wait.until(ExpectedConditions.elementToBeClickable(submitButton));
+        submitButton.click();
+        System.out.println("[LoginPage] Submit button clicked.");
+        return this;
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    //  Composite Actions — Poora login ek method mein (method chaining)
+    // ──────────────────────────────────────────────────────────────────────────
+
+    /** Steps 2+3+4: Email, password enter karke login click */
+    public LoginPage fillAndSubmitLoginForm(String email, String password) {
+        return enterEmail(email)
+                .enterPassword(password)
+                .clickLogin();
+    }
+
+    /** Step 5: OTP enter karke submit */
+    public void submitOtp(String otp) {
+        enterOtp(otp).clickSubmit();
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    //  Getters — Test assertions ke liye
+    // ──────────────────────────────────────────────────────────────────────────
+
+    /** Error message text lo (negative tests ke liye) */
+    public String getErrorMessage() {
         try {
-            click(LOGIN_BUTTON);
+            wait.until(ExpectedConditions.visibilityOf(errorMessage));
+            return errorMessage.getText();
         } catch (Exception e) {
-            log.warn("Standard click failed for Login button, retrying via JS: {}", e.getMessage());
-            jsClick(LOGIN_BUTTON);
+            return "";
         }
     }
 
-    /**
-     * Enter OTP – handles both single-field and multi-cell (Ant Design) OTP inputs.
-     */
-    public void enterOtp(String otp) {
-        log.info("Entering OTP");
-
-        // Detect multi-cell OTP (maxlength="1" inputs)
-        List<WebElement> cells = driver.findElements(
-                By.xpath("//input[@maxlength='1'][not(@type='password')]"));
-
-        if (cells.size() >= 2) {
-            log.info("Detected multi-cell OTP ({} cells)", cells.size());
-            char[] digits = otp.toCharArray();
-            for (int i = 0; i < Math.min(digits.length, cells.size()); i++) {
-                WebElement cell = cells.get(i);
-                wait.waitForClickable(cell);
-                cell.clear();
-                cell.sendKeys(String.valueOf(digits[i]));
-            }
-        } else {
-            // Single OTP field
-            type(OTP_INPUT_FIRST, otp);
-        }
-    }
-
-    /**
-     * Click the Submit button; falls back to JS click if intercepted.
-     */
-    public void clickSubmit() {
-        log.info("Clicking Submit button");
+    /** Check karo — OTP screen show ho raha hai ya nahi */
+    public boolean isOtpScreenVisible() {
         try {
-            click(SUBMIT_BUTTON);
-        } catch (Exception e) {
-            log.warn("Standard click failed for Submit button, retrying via JS: {}", e.getMessage());
-            jsClick(SUBMIT_BUTTON);
-        }
-    }
-
-    // ── Compound actions ─────────────────────────────────────────────────────
-
-    public void performLogin(String email, String password) {
-        enterEmail(email);
-        enterPassword(password);
-        clickLogin();
-    }
-
-    public void performOtpVerification(String otp) {
-        enterOtp(otp);
-        clickSubmit();
-    }
-
-    // ── State helpers ────────────────────────────────────────────────────────
-
-    /**
-     * Waits up to OTP_FORM_TIMEOUT_SEC for the OTP form to appear.
-     * Uses a dedicated longer wait because the OTP step requires a
-     * server-side credential validation round-trip before rendering.
-     */
-    public boolean isOtpFormVisible() {
-        log.info("Waiting up to {}s for OTP form...", OTP_FORM_TIMEOUT_SEC);
-        try {
-            new WebDriverWait(driver, Duration.ofSeconds(OTP_FORM_TIMEOUT_SEC))
-                    .until(ExpectedConditions.visibilityOfElementLocated(OTP_FORM_INDICATOR));
-            log.info("OTP form appeared successfully");
+            wait.until(ExpectedConditions.visibilityOf(otpInput));
             return true;
         } catch (Exception e) {
-            log.error("OTP form NOT visible after {}s – URL: {} | Cause: {}",
-                    OTP_FORM_TIMEOUT_SEC, driver.getCurrentUrl(), e.getMessage());
-            logPageSourceSnippet();
             return false;
         }
     }
 
-    public boolean isLoginFormVisible() {
-        return isDisplayed(EMAIL_INPUT);
+    /** Current page title lo */
+    public String getPageTitle() {
+        return driver.getTitle();
     }
 
-    // ── Private helpers ──────────────────────────────────────────────────────
-
-    private void jsClick(By locator) {
-        WebElement el = driver.findElement(locator);
-        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", el);
-    }
-
-    private void logPageSourceSnippet() {
-        try {
-            String src = driver.getPageSource();
-            log.debug("Page source (first 3000 chars for diagnosis):\n{}",
-                    src.substring(0, Math.min(src.length(), 3000)));
-        } catch (Exception ignored) {}
+    /** Current URL lo */
+    public String getCurrentUrl() {
+        return driver.getCurrentUrl();
     }
 }
