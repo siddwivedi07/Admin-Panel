@@ -1,78 +1,44 @@
-name: DAMS Selenium CI/CD
+name: DAMS Selenium Test
 
 on:
   push:
-    branches: [main]
-  workflow_dispatch:
-
+    branches:
+      - main
+  workflow_dispatch:         
 env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
-  test:
+  run-selenium-test:
+    name: Run Selenium Test (main)
     runs-on: ubuntu-latest
 
     steps:
-      # ── 1. Checkout ──────────────────────────────────────────────────────────
-      - name: Checkout Repository
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      # ── 2. Java 17 ───────────────────────────────────────────────────────────
-      - name: Set up JDK 17
+      - name: Set up Java JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
           cache: maven
 
-      # ── 3. Install Google Chrome ─────────────────────────────────────────────
       - name: Install Google Chrome
-        uses: browser-actions/setup-chrome@v2
-
-      # ── 4. Fix filename case mismatch (Logintest.java -> LoginTest.java) ──────
-      # Java requires filename == public class name (case-sensitive on Linux).
-      - name: Fix Java filename case if needed
         run: |
-          TEST_DIR=src/main/java/com/dams/test
-          WRONG=$TEST_DIR/Logintest.java
-          RIGHT=$TEST_DIR/LoginTest.java
-          if [ -f "$WRONG" ] && [ ! -f "$RIGHT" ]; then
-            echo "Renaming $WRONG -> $RIGHT"
-            mv "$WRONG" "$RIGHT"
-          fi
-          echo "Test file present: $(ls $TEST_DIR/)"
+          sudo apt-get update -y
+          sudo apt-get install -y wget gnupg2 unzip curl
+          wget -q -O - https://dl.google.com/linux/linux_signing_key.pub \
+            | sudo gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg
 
-      # ── 5. Switch config to headless for CI ──────────────────────────────────
-      - name: Set headless=true for CI
-        run: |
-          CONFIG=src/main/resources/config.properties
-          if [ ! -f "$CONFIG" ]; then
-            echo "ERROR: $CONFIG not found"
-            find . -name "*.properties" | head -20
-            exit 1
-          fi
-          sed -i 's/headless=false/headless=true/' "$CONFIG"
-          echo "Config after update:"
-          cat "$CONFIG"
-
-      # ── 6. Run Selenium Tests ────────────────────────────────────────────────
-      # -Dsurefire.failIfNoSpecifiedTests=false prevents false failures
-      # -Dtest.timeout=120 gives extra room for CI network latency
-      - name: Run Selenium Tests
-        run: mvn clean test -B
-        continue-on-error: false
-
-      # ── 7. Ensure output dirs exist even if tests aborted ────────────────────
-      - name: Ensure report directories exist
-        if: always()
-        run: mkdir -p test-output/reports test-output/screenshots test-output/logs
-
-      # ── 8. Upload Reports ────────────────────────────────────────────────────
-      - name: Upload Reports
-        if: always()
+      - name: Build & Run Selenium Tests
+        run: mvn clean test --no-transfer-progress
+      
+      - name: Upload DAMS Test Artifact
+        if: always() 
         uses: actions/upload-artifact@v4
         with:
-          name: DAMS-Reports-${{ github.run_number }}
-          path: test-output/
+          name: dams-selenium-artifact
+          path: |
+            target/surefire-reports/
+            target/*.jar
+            screenshots/
           retention-days: 30
-          if-no-files-found: warn
