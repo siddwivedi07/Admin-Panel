@@ -1,67 +1,85 @@
-name: DAMS Selenium Test
+name: DAMS Selenium CI/CD
 
 on:
   push:
-    branches:
-      - main
-  workflow_dispatch:           
+    branches: [main]
+  workflow_dispatch:
 
 env:
-  CI: "true"                   
-
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  run-selenium-test:
-    name: Run Selenium Test (main)
+  test:
     runs-on: ubuntu-latest
 
     steps:
-
-      # ── Step 1: Checkout ──────────────────────────────────────────────────
-      - name: Checkout Code
+      # ── 1. Checkout ──────────────────────────────────────────────────────────
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # ── Step 2: Java JDK 17 ───────────────────────────────────────────────
-      - name: Set up Java JDK 17
+      # ── 2. Java 17 ───────────────────────────────────────────────────────────
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
           cache: maven
 
-      # ── Step 3: Install Google Chrome ─────────────────────────────────────
+      # ── 3. Install Google Chrome ─────────────────────────────────────────────
       - name: Install Google Chrome
+        uses: browser-actions/setup-chrome@v2
+
+      # ── 4. Fix filename case mismatch (Logintest.java -> LoginTest.java) ──────
+      - name: Fix Java filename case if needed
         run: |
-          sudo apt-get update -y
-          sudo apt-get install -y wget gnupg2 unzip curl
+          TEST_DIR=src/main/java/com/dams/test
+          WRONG=$TEST_DIR/Logintest.java
+          RIGHT=$TEST_DIR/LoginTest.java
+          if [ -f "$WRONG" ] && [ ! -f "$RIGHT" ]; then
+            echo "Renaming $WRONG -> $RIGHT"
+            mv "$WRONG" "$RIGHT"
+          fi
+          echo "Test file present: $(ls $TEST_DIR/)"
 
-          wget -q -O - https://dl.google.com/linux/linux_signing_key.pub \
-            | sudo gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg
+      # ── 5. Switch config to headless for CI ──────────────────────────────────
+      - name: Set headless=true for CI
+        run: |
+          CONFIG=src/main/resources/config.properties
+          if [ ! -f "$CONFIG" ]; then
+            echo "ERROR: $CONFIG not found"
+            find . -name "*.properties" | head -20
+            exit 1
+          fi
+          sed -i 's/headless=false/headless=true/' "$CONFIG"
+          echo "Config after update:"
+          cat "$CONFIG"
 
-          echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] \
-            http://dl.google.com/linux/chrome/deb/ stable main" \
-            | sudo tee /etc/apt/sources.list.d/google-chrome.list
+      # ── 6. Run Selenium Tests ────────────────────────────────────────────────
+      # --fail-at-end: run ALL tests even if one fails (full diagnostic output)
+      - name: Run Selenium Tests
+        run: mvn clean test -B --fail-at-end
 
-          sudo apt-get update -y
-          sudo apt-get install -y google-chrome-stable
-          google-chrome --version
+      # ── 7. Ensure output dirs exist even if tests aborted ────────────────────
+      - name: Ensure report directories exist
+        if: always()
+        run: mkdir -p test-output/reports test-output/screenshots test-output/logs
 
-      # ── Step 4: Build & Run Selenium Tests ────────────────────────────────
-      - name: Build & Run Selenium Tests
-        run: mvn clean test --no-transfer-progress
-        env:
-          CI: "true"
-
-      # ── Step 5: Upload DAMS Test Artifact ─────────────────────────────────
-      - name: Upload DAMS Test Artifact
+      # ── 8. Upload Reports ────────────────────────────────────────────────────
+      - name: Upload Reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: dams-selenium-artifact
-          path: |
-            target/surefire-reports/
-            target/*.jar
-            test-output/reports/
-            test-output/screenshots/
-            test-output/logs/
+          name: DAMS-Reports-${{ github.run_number }}
+          path: test-output/
           retention-days: 30
+          if-no-files-found: warn
+
+      # ── 9. Upload Surefire Reports (TestNG XML) ───────────────────────────────
+      - name: Upload Surefire Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: DAMS-Surefire-${{ github.run_number }}
+          path: target/surefire-reports/
+          retention-days: 30
+          if-no-files-found: warn
