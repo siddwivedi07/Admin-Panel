@@ -1,132 +1,174 @@
 package com.dams.test;
 
+// ══════════════════════════════════════════════════════════════════════════════
+//  LoginTest.java  —  DAMS Test Layer
+//  ──────────────────────────────────────────────────────────────────────────
+//  Extends BaseTest which provides (this repo's actual API):
+//    protected WebDriver     driver        — set in @BeforeMethod
+//    protected WebDriverWait wait          — set in @BeforeMethod
+//    protected ExtentTest    extentTest    — set in @BeforeMethod
+//    protected void navigateToLogin()      — opens URL, waits for email field
+//    protected void performLogin(email, password, otp)
+//    protected void verifyLoginSuccess()
+//    protected void clickByText(String)
+//    protected void clearAndType(WebElement, String)
+//    protected void sleep(long ms)
+//    protected void log(String)
+//
+//  ConfigReader (static methods — this repo's actual API):
+//    ConfigReader.getUsername()   — email value
+//    ConfigReader.getPassword()
+//    ConfigReader.getOtp()
+//    ConfigReader.getUrl()
+//
+//  ReportManager (static methods — this repo's actual API):
+//    ReportManager.initReport()
+//    ReportManager.createTest(name)  — returns ExtentTest (used in @BeforeMethod)
+//    ReportManager.flushReport()
+//    ReportManager.removeTest()
+//    ReportManager.getTest()         — gets current thread's ExtentTest
+// ══════════════════════════════════════════════════════════════════════════════
+
+import com.aventstack.extentreports.Status;
 import com.dams.base.BaseTest;
+import com.dams.core.ConfigReader;
 import com.dams.core.DriverManager;
 import com.dams.pages.LoginPage;
-import com.dams.report.ReportManager;
-import org.openqa.selenium.OutputType;
-import org.openqa.selenium.TakesScreenshot;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-/**
- * LoginTest — Full 5-step DAMS Admin login + OTP flow.
- *
- * Extends BaseTest which provides:
- *   - log          (Logger)
- *   - config       (ConfigReader — getEmail, getPassword, getOtp, getUrl)
- *   - @BeforeMethod: launches browser and opens config.getUrl()
- *   - @AfterMethod:  quits browser, captures screenshot on failure
- *   - captureCurrentScreenshot()
- *
- * Uses ReportManager.getInstance() which provides:
- *   - startTest(String name)
- *   - logStep(String tc, String phase, String step, boolean passed)
- *   - endTest(boolean passed, byte[] screenshot)
- *
- * Does NOT use: extentTest, navigateToLogin(), sleep(), fillAndSubmitLoginForm(),
- *               isOtpScreenVisible(), submitOtp(), verifyLoginSuccess(), driver field
- *               (all from a different BaseTest version — not in this repo).
- */
 public class LoginTest extends BaseTest {
 
-    @Test(description = "adminLoginTest - Login + OTP end-to-end flow")
-    public void adminLoginTest() {
+    @Test(
+        priority    = 1,
+        description = "TC_01: Login with valid email, password and default OTP 1980"
+    )
+    public void TC_01_SuccessfulLogin() {
+        extentTest.log(Status.INFO, "TC_01: Valid login test started.");
 
-        ReportManager report = ReportManager.getInstance();
-        report.startTest("adminLoginTest");
+        // Step 1: Navigate to login page (BaseTest.navigateToLogin opens URL
+        //         and waits for the email field to be visible)
+        navigateToLogin();
 
-        // BaseTest.@BeforeMethod has already opened config.getUrl()
-        // so we start directly on the login page.
         LoginPage loginPage = new LoginPage();
 
-        // ── TC_1 | STEP 2 – Enter Email ──────────────────────────────────────
-        boolean step1Ok = false;
+        // Step 2: Enter Email
         try {
-            loginPage.enterEmail(config.getEmail());
-            step1Ok = true;
+            loginPage.enterEmail(ConfigReader.getUsername());
+            extentTest.log(Status.INFO, "Step 2: Email entered → " + ConfigReader.getUsername());
+            log("  ✔ Step 2: Email entered.");
         } catch (Exception e) {
-            log.error("TC_1 failed: {}", e.getMessage());
+            extentTest.log(Status.FAIL, "Step 2 FAILED: " + e.getMessage());
+            Assert.fail("Failed to enter email: " + e.getMessage());
         }
-        report.logStep("TC_1", "Login", "STEP 2 - Enter Email", step1Ok);
-        Assert.assertTrue(step1Ok, "TC_1: Failed to enter email");
 
-        // ── TC_2 | STEP 2 – Enter Password ───────────────────────────────────
-        boolean step2Ok = false;
+        // Step 3: Enter Password
         try {
-            loginPage.enterPassword(config.getPassword());
-            step2Ok = true;
+            loginPage.enterPassword(ConfigReader.getPassword());
+            extentTest.log(Status.INFO, "Step 3: Password entered.");
+            log("  ✔ Step 3: Password entered.");
         } catch (Exception e) {
-            log.error("TC_2 failed: {}", e.getMessage());
+            extentTest.log(Status.FAIL, "Step 3 FAILED: " + e.getMessage());
+            Assert.fail("Failed to enter password: " + e.getMessage());
         }
-        report.logStep("TC_2", "Login", "STEP 2 - Enter Password", step2Ok);
-        Assert.assertTrue(step2Ok, "TC_2: Failed to enter password");
 
-        // ── TC_3 | STEP 3 – Click Login Button ───────────────────────────────
-        // clickLogin() internally waits for the credential form to disappear,
-        // ensuring the OTP screen is loading before it returns.
-        boolean step3Ok = false;
+        // Step 4: Click Login
+        // clickLogin() waits internally for the credential form to disappear
         try {
             loginPage.clickLogin();
-            step3Ok = true;
+            extentTest.log(Status.INFO, "Step 4: Login button clicked.");
+            log("  ✔ Step 4: Login button clicked.");
         } catch (Exception e) {
-            log.error("TC_3 failed: {}", e.getMessage());
+            extentTest.log(Status.FAIL, "Step 4 FAILED: " + e.getMessage());
+            Assert.fail("Failed to click Login button: " + e.getMessage());
         }
-        report.logStep("TC_3", "Login", "STEP 3 - Click Login Button", step3Ok);
-        Assert.assertTrue(step3Ok, "TC_3: Failed to click Login button");
 
-        // ── OTP screen assertion ──────────────────────────────────────────────
-        // isOtpFormVisible() tries 5 locator strategies over up to 30s total.
+        // Step 5a: Verify OTP screen appeared
+        // isOtpFormVisible() tries 5 locator strategies over up to 30s
         Assert.assertTrue(
-                loginPage.isOtpFormVisible(),
-                "OTP screen did not appear after clicking Login. " +
-                "Verify credentials in config.properties and Ant Design OTP locators."
+            loginPage.isOtpFormVisible(),
+            "OTP screen did not appear after clicking Login. " +
+            "Check credentials in config.properties."
         );
+        extentTest.log(Status.INFO, "Step 5: OTP screen visible.");
 
-        // ── TC_4 | STEP 4 – Enter OTP ────────────────────────────────────────
-        boolean step4Ok = false;
+        // Step 5b: Enter OTP
         try {
-            loginPage.enterOtp(config.getOtp());
-            step4Ok = true;
+            loginPage.enterOtp(ConfigReader.getOtp());
+            extentTest.log(Status.INFO, "Step 5: OTP entered → " + ConfigReader.getOtp());
+            log("  ✔ Step 5: OTP entered.");
         } catch (Exception e) {
-            log.error("TC_4 failed: {}", e.getMessage());
+            extentTest.log(Status.FAIL, "Step 5 OTP entry FAILED: " + e.getMessage());
+            Assert.fail("Failed to enter OTP: " + e.getMessage());
         }
-        report.logStep("TC_4", "Login", "STEP 4 - Enter OTP", step4Ok);
-        Assert.assertTrue(step4Ok, "TC_4: Failed to enter OTP");
 
-        // ── TC_5 | STEP 5 – Click OTP Submit ─────────────────────────────────
-        boolean step5Ok = false;
+        // Step 5c: Click Submit
         try {
             loginPage.clickSubmit();
-            step5Ok = true;
+            extentTest.log(Status.INFO, "Step 5: Submit button clicked.");
+            log("  ✔ Step 5: Submit clicked.");
         } catch (Exception e) {
-            log.error("TC_5 failed: {}", e.getMessage());
+            extentTest.log(Status.FAIL, "Step 5 Submit FAILED: " + e.getMessage());
+            Assert.fail("Failed to click Submit: " + e.getMessage());
         }
-        report.logStep("TC_5", "Login", "STEP 5 - Click OTP Submit", step5Ok);
-        Assert.assertTrue(step5Ok, "TC_5: Failed to click OTP Submit");
 
-        // ── TC_6 | Execution – overall result with screenshot ─────────────────
-        byte[] finalShot = captureCurrentScreenshot();
-        boolean allPassed = step1Ok && step2Ok && step3Ok && step4Ok && step5Ok;
-        report.endTest(allPassed, finalShot);
+        sleep(3000);
 
-        // Final URL check — should be on dashboard, not login page
-        String url = DriverManager.getDriver().getCurrentUrl();
-        log.info("Post-login URL: {}", url);
+        // After login: verify redirected to dashboard
+        verifyLoginSuccess();
+
+        String currentUrl = driver.getCurrentUrl();
         Assert.assertFalse(
-                url.equals(config.getUrl()) || url.contains("login"),
-                "Expected dashboard URL after login. Actual URL: " + url
+            currentUrl.trim().equals(ConfigReader.getUrl().trim()) || currentUrl.contains("login"),
+            "TC_01 FAILED: Still on login page. URL: " + currentUrl
         );
+
+        extentTest.log(Status.PASS, "TC_01 PASSED: Login successful. URL: " + currentUrl);
+        log("✅ TC_01_SuccessfulLogin PASSED");
     }
 
-    @Override
-    protected byte[] captureCurrentScreenshot() {
-        try {
-            return ((TakesScreenshot) DriverManager.getDriver())
-                    .getScreenshotAs(OutputType.BYTES);
-        } catch (Exception e) {
-            log.warn("Screenshot capture failed: {}", e.getMessage());
-            return null;
+    @Test(
+        priority    = 2,
+        description = "TC_02: Login with blank email should stay on login page"
+    )
+    public void TC_02_BlankEmailLogin() {
+        extentTest.log(Status.INFO, "TC_02: Blank email negative test.");
+        navigateToLogin();
+        LoginPage loginPage = new LoginPage();
+
+        loginPage.enterPassword(ConfigReader.getPassword());
+        clickByText("Login");
+        sleep(1500);
+
+        String url = driver.getCurrentUrl();
+        Assert.assertTrue(
+            url.trim().equals(ConfigReader.getUrl().trim()) || url.contains("login"),
+            "TC_02 FAILED: Should stay on login page. URL: " + url
+        );
+        extentTest.log(Status.PASS, "TC_02 PASSED: Stayed on login page (blank email).");
+        log("✅ TC_02_BlankEmailLogin PASSED");
+    }
+
+    @Test(
+        priority    = 3,
+        description = "TC_03: Login with wrong password should not show OTP screen"
+    )
+    public void TC_03_WrongPasswordLogin() {
+        extentTest.log(Status.INFO, "TC_03: Wrong password negative test.");
+        navigateToLogin();
+        LoginPage loginPage = new LoginPage();
+
+        loginPage.enterEmail(ConfigReader.getUsername());
+        loginPage.enterPassword("WrongPassword@999");
+        clickByText("Login");
+        sleep(2500);
+
+        boolean otpVisible = loginPage.isOtpFormVisible();
+        if (otpVisible) {
+            extentTest.log(Status.FAIL, "TC_03 FAILED: OTP appeared with wrong password.");
+            Assert.fail("OTP screen appeared with wrong password — security issue.");
         }
+        extentTest.log(Status.PASS, "TC_03 PASSED: Wrong password blocked correctly.");
+        log("✅ TC_03_WrongPasswordLogin PASSED");
     }
 }
