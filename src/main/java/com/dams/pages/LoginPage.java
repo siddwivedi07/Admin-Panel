@@ -1,9 +1,31 @@
 package com.dams.pages;
 
-import com.dams.base.BasePage;
+// ══════════════════════════════════════════════════════════════════════════════
+//  LoginPage.java  —  DAMS Pages Layer (Page Object Model)
+//  ──────────────────────────────────────────────────────────────────────────
+//  FIX: This repo has NO BasePage class — LoginPage now uses DriverManager
+//  and WebDriverWait directly instead of extending a missing BasePage.
+//
+//  APIs used (all exist in this repo):
+//    DriverManager.getDriver()       — com.dams.core.DriverManager
+//    ConfigReader.getExplicitWait()  — com.dams.core.ConfigReader (static)
+//    WebDriver, WebDriverWait, By    — Selenium
+//
+//  OTP FIX (for "OTP screen did not appear"):
+//    1. clickLogin() waits for email field to DISAPPEAR after click,
+//       confirming the credential form has been replaced by the OTP screen.
+//    2. isOtpFormVisible() uses 5 locator strategies with 30s on first try.
+//    3. resolveOtpInput() uses same waterfall so enterOtp() never fails.
+//    4. JS-click fallback on Login + Submit for Ant Design overlay intercepts.
+// ══════════════════════════════════════════════════════════════════════════════
+
+import com.dams.core.ConfigReader;
 import com.dams.core.DriverManager;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -11,23 +33,20 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import java.time.Duration;
 import java.util.List;
 
-/**
- * LoginPage — Page Object for DAMS Admin login (credentials + OTP).
- *
- * ONLY uses BasePage's actual protected API:
- *   log, wait, driver, type(By,String), click(By), isDisplayed(By)
- *
- * FIX for "OTP screen did not appear":
- *   1. clickLogin() waits for email field to DISAPPEAR before returning
- *      (confirms credential form has been replaced by OTP screen).
- *   2. isOtpFormVisible() uses 5 locator strategies with a 30s first-try
- *      to absorb server latency on CI runners.
- *   3. enterOtp() uses the same waterfall resolver.
- *   4. JS-click fallback on Login and Submit for Ant Design overlays.
- */
-public class LoginPage extends BasePage {
+public class LoginPage {
 
-    // ── Credential form locators ─────────────────────────────────────────────
+    private static final Logger log = LogManager.getLogger(LoginPage.class);
+
+    private final WebDriver     driver;
+    private final WebDriverWait wait;
+
+    // ── Constructor ───────────────────────────────────────────────────────────
+    public LoginPage() {
+        this.driver = DriverManager.getDriver();
+        this.wait   = new WebDriverWait(driver, Duration.ofSeconds(ConfigReader.getExplicitWait()));
+    }
+
+    // ── Credential form locators ──────────────────────────────────────────────
     private static final By EMAIL_INPUT =
             By.cssSelector("input#email[placeholder='Email']");
 
@@ -37,7 +56,7 @@ public class LoginPage extends BasePage {
     private static final By LOGIN_BUTTON =
             By.xpath("//button[@type='submit'][.//span[normalize-space()='Login']]");
 
-    // ── OTP locators: 5-strategy waterfall (first match wins) ────────────────
+    // ── OTP locators: 5-strategy waterfall (first match wins) ─────────────────
     private static final By OTP_S1 = By.cssSelector("input.ant-otp-input");
     private static final By OTP_S2 = By.cssSelector("input.ant-input:not(#email):not(#password)");
     private static final By OTP_S3 = By.cssSelector("input[maxlength]:not(#email):not(#password)");
@@ -47,28 +66,35 @@ public class LoginPage extends BasePage {
     private static final By SUBMIT_BUTTON =
             By.xpath("//button[@type='submit'][.//span[normalize-space()='Submit']]");
 
+    /** Long wait specifically for the OTP screen transition after Login click */
     private static final int OTP_WAIT_SEC = 30;
 
-    // ── Step 2: Enter Email ──────────────────────────────────────────────────
+    // ── Public Actions ────────────────────────────────────────────────────────
+
+    /** Step 2: Type email into the Email field */
     public void enterEmail(String email) {
         log.info("Entering email: {}", email);
-        type(EMAIL_INPUT, email);
+        WebElement el = wait.until(ExpectedConditions.visibilityOfElementLocated(EMAIL_INPUT));
+        el.clear();
+        el.sendKeys(email);
     }
 
-    // ── Step 3: Enter Password ───────────────────────────────────────────────
+    /** Step 3: Type password into the Password field */
     public void enterPassword(String password) {
         log.info("Entering password: [REDACTED]");
-        type(PASSWORD_INPUT, password);
+        WebElement el = wait.until(ExpectedConditions.visibilityOfElementLocated(PASSWORD_INPUT));
+        el.clear();
+        el.sendKeys(password);
     }
 
     /**
      * Step 4: Click Login button.
-     * KEY FIX: waits for email field to become invisible after click,
-     * confirming the OTP screen transition has started.
+     * KEY FIX: after clicking, waits for the email field to disappear —
+     * this confirms the credential form has been replaced by the OTP screen.
      */
     public void clickLogin() {
         log.info("Clicking Login button");
-        WebElement btn = wait.waitForClickable(LOGIN_BUTTON);
+        WebElement btn = wait.until(ExpectedConditions.elementToBeClickable(LOGIN_BUTTON));
         try {
             btn.click();
         } catch (Exception e) {
@@ -76,18 +102,18 @@ public class LoginPage extends BasePage {
             jsClick(btn);
         }
 
-        // Wait for credential form to disappear = OTP screen is loading
-        log.info("Waiting up to {}s for credential form to transition to OTP screen...", OTP_WAIT_SEC);
+        // Wait for credential form to vanish = OTP screen transition started
+        log.info("Waiting up to {}s for credential form to disappear...", OTP_WAIT_SEC);
         WebDriverWait transWait = new WebDriverWait(driver, Duration.ofSeconds(OTP_WAIT_SEC));
         try {
             transWait.until(ExpectedConditions.invisibilityOfElementLocated(EMAIL_INPUT));
-            log.info("Credential form gone — OTP screen is loading.");
+            log.info("Credential form gone — OTP screen loading.");
         } catch (Exception e) {
-            log.warn("Email field still visible after {}s. OTP detection will still be attempted.", OTP_WAIT_SEC);
+            log.warn("Email field still present after {}s — OTP detection will continue.", OTP_WAIT_SEC);
         }
     }
 
-    // ── Step 5: Enter OTP ────────────────────────────────────────────────────
+    /** Step 5: Type OTP using waterfall locator resolution */
     public void enterOtp(String otp) {
         log.info("Entering OTP: {}", otp);
         WebElement field = resolveOtpInput();
@@ -96,10 +122,10 @@ public class LoginPage extends BasePage {
         log.info("OTP entered successfully.");
     }
 
-    // ── Step 5: Click Submit ─────────────────────────────────────────────────
+    /** Step 5: Click the Submit button (OTP form) */
     public void clickSubmit() {
         log.info("Clicking Submit button");
-        WebElement btn = wait.waitForClickable(SUBMIT_BUTTON);
+        WebElement btn = wait.until(ExpectedConditions.elementToBeClickable(SUBMIT_BUTTON));
         try {
             btn.click();
         } catch (Exception e) {
@@ -109,10 +135,27 @@ public class LoginPage extends BasePage {
         log.info("Submit clicked.");
     }
 
+    // ── Compound actions ──────────────────────────────────────────────────────
+
+    /** Steps 2+3+4: fill credentials and click Login */
+    public void performLogin(String email, String password) {
+        enterEmail(email);
+        enterPassword(password);
+        clickLogin();
+    }
+
+    /** Step 5: enter OTP and click Submit */
+    public void performOtpVerification(String otp) {
+        enterOtp(otp);
+        clickSubmit();
+    }
+
+    // ── State checkers ────────────────────────────────────────────────────────
+
     /**
      * Returns true when the OTP form is visible.
-     * Tries 5 locator strategies; first gets 30s, rest get 5s each.
-     * Also checks Submit button as a final fallback.
+     * Strategy 1 gets 30s; strategies 2-5 get 5s each.
+     * Final fallback: checks Submit button visibility.
      */
     public boolean isOtpFormVisible() {
         By[] strategies = { OTP_S1, OTP_S2, OTP_S3, OTP_S4, OTP_S5 };
@@ -121,8 +164,7 @@ public class LoginPage extends BasePage {
         for (int i = 0; i < strategies.length; i++) {
             try {
                 WebDriverWait w = new WebDriverWait(driver, Duration.ofSeconds(timeouts[i]));
-                WebElement el = w.until(
-                        ExpectedConditions.visibilityOfElementLocated(strategies[i]));
+                WebElement el = w.until(ExpectedConditions.visibilityOfElementLocated(strategies[i]));
                 if (el != null && el.isDisplayed()) {
                     log.info("OTP input confirmed via strategy {}: {}", i + 1, strategies[i]);
                     return true;
@@ -132,28 +174,32 @@ public class LoginPage extends BasePage {
             }
         }
 
-        // Last resort: Submit button visible = OTP screen is present
+        // Last resort: Submit button visible = we are on OTP screen
         try {
             WebDriverWait w = new WebDriverWait(driver, Duration.ofSeconds(5));
-            WebElement submit = w.until(
-                    ExpectedConditions.visibilityOfElementLocated(SUBMIT_BUTTON));
+            WebElement submit = w.until(ExpectedConditions.visibilityOfElementLocated(SUBMIT_BUTTON));
             if (submit != null && submit.isDisplayed()) {
                 log.info("Submit button visible — OTP screen confirmed.");
                 return true;
             }
         } catch (Exception ignored) {}
 
-        log.error("isOtpFormVisible() exhausted all strategies. URL: {}", driver.getCurrentUrl());
+        log.error("isOtpFormVisible() failed — all strategies exhausted. URL: {}", driver.getCurrentUrl());
         return false;
     }
 
+    /** True when the login form's email field is present */
     public boolean isLoginFormVisible() {
-        return isDisplayed(EMAIL_INPUT);
+        try {
+            return wait.until(ExpectedConditions.visibilityOfElementLocated(EMAIL_INPUT)).isDisplayed();
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────
 
-    /** Tries each OTP locator in order; returns first visible, enabled element. */
+    /** Waterfall: returns first visible + enabled OTP input found */
     private WebElement resolveOtpInput() {
         By[] strategies = { OTP_S1, OTP_S2, OTP_S3, OTP_S4, OTP_S5 };
         for (By locator : strategies) {
