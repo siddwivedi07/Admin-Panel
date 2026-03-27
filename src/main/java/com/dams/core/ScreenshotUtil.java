@@ -1,4 +1,4 @@
-package com.dams.utils;
+package com.dams.core;
 
 // ══════════════════════════════════════════════════════════════════════════════
 //  ScreenshotUtil.java  —  DAMS Utility Layer
