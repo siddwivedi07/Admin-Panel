@@ -28,7 +28,7 @@ import com.aventstack.extentreports.Status;
 import com.dams.core.ConfigReader;
 import com.dams.core.DriverManager;
 import com.dams.report.ReportManager;
-import com.dams.utils.ScreenshotUtil;
+import com.dams.core.ScreenshotUtil;
 import org.openqa.selenium.*;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
