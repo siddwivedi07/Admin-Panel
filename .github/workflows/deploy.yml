@@ -1,0 +1,42 @@
+name: DAMS ADMIN PANEL SELENIUM
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+env:
+  ADMIN_LOGIN: ${{ secrets.ADMIN_LOGIN }}
+  CI: "true"
+  
+jobs:
+  run-all-modules:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: temurin
+          cache: maven
+
+      - uses: browser-actions/setup-chrome@v2
+        with:
+          chrome-version: stable
+
+      - name: Build
+        run: mvn clean package -q -DskipTests
+
+      - name: Run All Modules
+        run: mvn test -Dsurefire.suiteXmlFiles=testng.xml
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: DAMS-Admin-Panal-Selenium-Report-${{ github.run_number }}
+          path: |
+            DAMS_Selenium_Report_*.html
+            screenshots/
