@@ -5,13 +5,7 @@
     </listeners>
     <test name="DAMS Regression">
         <classes>
-            <!--  <class name="com.dams.tests.login.LoginTest"/>                          -->
-            <!--  <class name="com.dams.tests.qrcode.GenerateQRCodeTest"/>                -->
-            <!--  <class name="com.dams.tests.RadioCasess.RadioCasessTest"/>              -->
-            <!--  <class name="com.dams.tests.Opportunity.OpportunityTest"/>              -->
-            <!--  <class name="com.dams.tests.AppDownload.AppDownloadTest"/>              -->
-            <!--  <class name="com.dams.tests.AppliedJob.AppliedJobTest"/>                -->
-            <class name="com.dams.tests.BusinessIntelligence.BusinessIntelligenceTest"/> 
-        </classes>
+             <class name="com.dams.tests.login.LoginTest"/> 
+          </classes> 
     </test>
 </suite>
