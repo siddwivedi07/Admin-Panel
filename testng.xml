@@ -6,7 +6,7 @@
     <test name="DAMS Regression">
         <classes>
              <class name="com.dams.tests.login.LoginTest"/> 
-             <class name="com.dams.tests.Paymentemi.PaymentEmiTest"/> 
+             <class name="com.dams.tests.PaymentEmi.PaymentEmiTest"/> 
           </classes> 
     </test>
 </suite>
