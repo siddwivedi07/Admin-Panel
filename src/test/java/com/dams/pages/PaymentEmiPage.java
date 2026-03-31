@@ -1,3 +1,5 @@
+package com.dams.pages;
+
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
@@ -136,23 +138,14 @@ public class PaymentEmiPage {
 
     // ── Step 7: Click Date Range button and fill picker ───────────────────────
 
-    /**
-     * Clicks the "Date Range" button, waits 2 seconds for the Ant Design
-     * range picker to appear, then fills in the start and end dates.
-     *
-     * @param startDate  e.g. "2025-01-01"
-     * @param endDate    e.g. "2025-03-31"
-     */
     public PaymentEmiPage clickDateRangeAndFill(String startDate, String endDate) {
         System.out.println("[PaymentEmiPage] Step 7 → Clicking 'Date Range' button...");
         WebElement btn = wait.until(ExpectedConditions.elementToBeClickable(dateRangeBtn));
         scrollAndClick(btn);
         System.out.println("[PaymentEmiPage] Step 7 → 'Date Range' clicked. Waiting for picker...");
 
-        // Wait 2 seconds as specified
         sleep(2000);
 
-        // Fill Start Date
         System.out.println("[PaymentEmiPage] Step 7 → Entering start date: " + startDate);
         WebElement startInput = wait.until(
             ExpectedConditions.visibilityOfElementLocated(startDateInput)
@@ -161,15 +154,12 @@ public class PaymentEmiPage {
         clearAndType(startInput, startDate);
         sleep(500);
 
-        // Fill End Date
         System.out.println("[PaymentEmiPage] Step 7 → Entering end date: " + endDate);
         WebElement endInput = wait.until(
             ExpectedConditions.visibilityOfElementLocated(endDateInput)
         );
         endInput.click();
         clearAndType(endInput, endDate);
-
-        // Confirm the selection
         endInput.sendKeys(Keys.ENTER);
         sleep(1000);
 
@@ -177,9 +167,8 @@ public class PaymentEmiPage {
         return this;
     }
 
-    // ── Visibility checks ─────────────────────────────────────────────────────
+    // ── Visibility / value checks ─────────────────────────────────────────────
 
-    /** Returns true if the Emi Installment List card is visible on screen. */
     public boolean isEmiInstallmentListVisible() {
         try {
             return wait.until(
@@ -190,7 +179,6 @@ public class PaymentEmiPage {
         }
     }
 
-    /** Returns true if the Today button is visible and enabled. */
     public boolean isTodayButtonVisible() {
         try {
             return wait.until(
@@ -201,21 +189,17 @@ public class PaymentEmiPage {
         }
     }
 
-    /** Returns the current value of the Start Date picker input. */
     public String getStartDateValue() {
         try {
-            WebElement input = driver.findElement(startDateInput);
-            return input.getAttribute("value");
+            return driver.findElement(startDateInput).getAttribute("value");
         } catch (Exception e) {
             return "";
         }
     }
 
-    /** Returns the current value of the End Date picker input. */
     public String getEndDateValue() {
         try {
-            WebElement input = driver.findElement(endDateInput);
-            return input.getAttribute("value");
+            return driver.findElement(endDateInput).getAttribute("value");
         } catch (Exception e) {
             return "";
         }
@@ -223,7 +207,6 @@ public class PaymentEmiPage {
 
     // ── Private helpers ───────────────────────────────────────────────────────
 
-    /** Scrolls an element into view then clicks it. */
     private void scrollAndClick(WebElement element) {
         ((JavascriptExecutor) driver).executeScript(
             "arguments[0].scrollIntoView({block:'center'});", element
@@ -231,16 +214,11 @@ public class PaymentEmiPage {
         element.click();
     }
 
-    /**
-     * Clears an Ant Design input via JavaScript (native .clear() is often
-     * blocked by Ant's controlled components) and then types the value.
-     */
     private void clearAndType(WebElement input, String value) {
         ((JavascriptExecutor) driver).executeScript("arguments[0].value = '';", input);
         input.sendKeys(value);
     }
 
-    /** Simple sleep wrapper — avoids try/catch boilerplate in step methods. */
     private void sleep(long millis) {
         try {
             Thread.sleep(millis);
