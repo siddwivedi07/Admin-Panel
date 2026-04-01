@@ -2,150 +2,144 @@ package com.dams.tests.GenerateQrCode;
 
 import com.dams.base.BaseTest;
 import com.dams.pages.GenerateQrCodePage;
+import com.dams.pages.LoginPage;
+import com.dams.report.ReportManager;
+import org.openqa.selenium.OutputType;
+import org.openqa.selenium.TakesScreenshot;
 import org.testng.annotations.Test;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
 /**
- * TestNG Test Class for Generate QR Code Module
+ * TestNG Test Class for Generate QR Code Module.
  * Package : com.dams.tests.GenerateQrCode
- * Suite   : testng.xml  →  <class name="com.dams.tests.GenerateQrCode.GenerateQrCodeTest"/>
+ * Suite   : testng.xml → <class name="com.dams.tests.GenerateQrCode.GenerateQrCodeTest"/>
+ *
+ * Single @Test method so that all steps (Login + TC_01 … TC_11)
+ * run in one browser session — the same pattern used by PaymentEmiTest.
  */
 public class GenerateQrCodeTest extends BaseTest {
 
-    private static final String START_DATE = "2024-01-01";
-    private static final String END_DATE   = "2024-12-31";
+    private static final String START_DATE = "2025-01-01";
+    private static final String END_DATE   = "2025-03-31";
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Step 1 – Click "Generate QR Code" in the side menu
-    // ─────────────────────────────────────────────────────────────────────────
-    @Test(priority = 1,
-          description = "Step 1: Click Generate QR Code menu item")
-    public void testClickGenerateQrCodeMenu() {
-        GenerateQrCodePage generateQrCodePage = new GenerateQrCodePage(driver);
-        generateQrCodePage.clickGenerateQrCodeMenu();
-        System.out.println("✔ Step 1 PASSED – Generate QR Code menu clicked");
-    }
+    @Test(description = "Generate QR Code – full flow: login → Partner QR Report filters → Generate Code CRUD")
+    public void generateQrCodeFullFlowTest() {
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Step 2 – Click "Partner QR Code Report" card
-    // ─────────────────────────────────────────────────────────────────────────
-    @Test(priority = 2,
-          dependsOnMethods = "testClickGenerateQrCodeMenu",
-          description = "Step 2: Click Partner QR Code Report card")
-    public void testClickPartnerQrCodeReportCard() {
-        GenerateQrCodePage generateQrCodePage = new GenerateQrCodePage(driver);
-        generateQrCodePage.clickPartnerQrCodeReportCard();
-        System.out.println("✔ Step 2 PASSED – Partner QR Code Report card clicked");
-    }
+        // ── Step 0: Login ─────────────────────────────────────────────────────
+        System.out.println("[GenerateQrCodeTest] Step 0: Logging in to admin portal...");
+        LoginPage loginPage = new LoginPage(driver);
+        loginPage.loginToAdminPortal();
+        ReportManager.logStep("GenerateQrCode", "Step 0 – Login", true);
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Step 3 – Click "Today" filter button
-    // ─────────────────────────────────────────────────────────────────────────
-    @Test(priority = 3,
-          dependsOnMethods = "testClickPartnerQrCodeReportCard",
-          description = "Step 3: Click Today button")
-    public void testClickTodayButton() {
-        GenerateQrCodePage generateQrCodePage = new GenerateQrCodePage(driver);
-        generateQrCodePage.clickTodayButton();
-        System.out.println("✔ Step 3 PASSED – Today button clicked");
-    }
+        sleep(5_000);
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Step 4 – Click "Weekly" filter button
-    // ─────────────────────────────────────────────────────────────────────────
-    @Test(priority = 4,
-          dependsOnMethods = "testClickTodayButton",
-          description = "Step 4: Click Weekly button")
-    public void testClickWeeklyButton() {
-        GenerateQrCodePage generateQrCodePage = new GenerateQrCodePage(driver);
-        generateQrCodePage.clickWeeklyButton();
-        System.out.println("✔ Step 4 PASSED – Weekly button clicked");
-    }
+        GenerateQrCodePage page = new GenerateQrCodePage(driver);
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Step 5 – Click "Monthly" filter button
-    // ─────────────────────────────────────────────────────────────────────────
-    @Test(priority = 5,
-          dependsOnMethods = "testClickWeeklyButton",
-          description = "Step 5: Click Monthly button")
-    public void testClickMonthlyButton() {
-        GenerateQrCodePage generateQrCodePage = new GenerateQrCodePage(driver);
-        generateQrCodePage.clickMonthlyButton();
-        System.out.println("✔ Step 5 PASSED – Monthly button clicked");
-    }
+        // ── TC_01: Click Generate QR Code menu link ───────────────────────────
+        page.clickGenerateQrCodeMenu();
+        ReportManager.logStep("GenerateQrCode", "TC_01 – Click Generate QR Code Menu", true);
+        sleep(2_000);
+        takeScreenshot("tc01_generate_qr_code_menu");
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Step 6 – Click "Yearly" filter button
-    // ─────────────────────────────────────────────────────────────────────────
-    @Test(priority = 6,
-          dependsOnMethods = "testClickMonthlyButton",
-          description = "Step 6: Click Yearly button")
-    public void testClickYearlyButton() {
-        GenerateQrCodePage generateQrCodePage = new GenerateQrCodePage(driver);
-        generateQrCodePage.clickYearlyButton();
-        System.out.println("✔ Step 6 PASSED – Yearly button clicked");
-    }
+        // ── TC_02: Click Partner QR Code Report card ──────────────────────────
+        page.clickPartnerQrCodeReportCard();
+        ReportManager.logStep("GenerateQrCode", "TC_02 – Click Partner QR Code Report Card", true);
+        sleep(2_000);
+        takeScreenshot("tc02_partner_qr_code_report");
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Step 7 – Click "Date Range" and enter start & end dates
-    // ─────────────────────────────────────────────────────────────────────────
-    @Test(priority = 7,
-          dependsOnMethods = "testClickYearlyButton",
-          description = "Step 7: Click Date Range button and enter start/end dates")
-    public void testSelectDateRange() {
-        GenerateQrCodePage generateQrCodePage = new GenerateQrCodePage(driver);
-        generateQrCodePage.selectDateRange(START_DATE, END_DATE);
-        System.out.println("✔ Step 7 PASSED – Date Range selected: "
-                + START_DATE + " → " + END_DATE);
-    }
+        // ── TC_03: Click Today button ─────────────────────────────────────────
+        page.clickToday();
+        ReportManager.logStep("GenerateQrCode", "TC_03 – Click Today Filter", true);
+        sleep(2_000);
+        takeScreenshot("tc03_today_filter");
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Step 8 – Navigate back and click "Generate Code" card
-    // ─────────────────────────────────────────────────────────────────────────
-    @Test(priority = 8,
-          dependsOnMethods = "testSelectDateRange",
-          description = "Step 8: Navigate back and click Generate Code card")
-    public void testClickGenerateCodeCard() {
+        // ── TC_04: Click Weekly button ────────────────────────────────────────
+        page.clickWeekly();
+        ReportManager.logStep("GenerateQrCode", "TC_04 – Click Weekly Filter", true);
+        sleep(2_000);
+        takeScreenshot("tc04_weekly_filter");
+
+        // ── TC_05: Click Monthly button ───────────────────────────────────────
+        page.clickMonthly();
+        ReportManager.logStep("GenerateQrCode", "TC_05 – Click Monthly Filter", true);
+        sleep(2_000);
+        takeScreenshot("tc05_monthly_filter");
+
+        // ── TC_06: Click Yearly button ────────────────────────────────────────
+        page.clickYearly();
+        ReportManager.logStep("GenerateQrCode", "TC_06 – Click Yearly Filter", true);
+        sleep(2_000);
+        takeScreenshot("tc06_yearly_filter");
+
+        // ── TC_07: Click Date Range and fill dates ────────────────────────────
+        page.clickDateRangeAndFill(START_DATE, END_DATE);
+        ReportManager.logStep("GenerateQrCode", "TC_07 – Click Date Range and Fill Dates", true);
+        sleep(2_000);
+        takeScreenshot("tc07_date_range_filter");
+
+        // ── TC_08: Navigate back and click Generate Code card ─────────────────
         driver.navigate().back();
-        GenerateQrCodePage generateQrCodePage = new GenerateQrCodePage(driver);
-        generateQrCodePage.clickGenerateCodeCard();
-        System.out.println("✔ Step 8 PASSED – Generate Code card clicked");
-    }
+        sleep(2_000);
+        page.clickGenerateCodeCard();
+        ReportManager.logStep("GenerateQrCode", "TC_08 – Click Generate Code Card", true);
+        sleep(2_000);
+        takeScreenshot("tc08_generate_code_card");
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Step 9 – Click first "View" button in the table (only once)
-    // ─────────────────────────────────────────────────────────────────────────
-    @Test(priority = 9,
-          dependsOnMethods = "testClickGenerateCodeCard",
-          description = "Step 9: Click first View button in Generate Code table")
-    public void testClickFirstViewButton() {
-        GenerateQrCodePage generateQrCodePage = new GenerateQrCodePage(driver);
-        generateQrCodePage.clickFirstViewButton();
-        System.out.println("✔ Step 9 PASSED – View button clicked (first row)");
+        // ── TC_09: Click first View button (only once) ────────────────────────
+        page.clickFirstViewButton();
+        ReportManager.logStep("GenerateQrCode", "TC_09 – Click View Button (first row)", true);
+        sleep(2_000);
+        takeScreenshot("tc09_view_button");
         driver.navigate().back();
-    }
+        sleep(2_000);
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Step 10 – Click first "Edit" button in the table (only once)
-    // ─────────────────────────────────────────────────────────────────────────
-    @Test(priority = 10,
-          dependsOnMethods = "testClickFirstViewButton",
-          description = "Step 10: Click first Edit button in Generate Code table")
-    public void testClickFirstEditButton() {
-        GenerateQrCodePage generateQrCodePage = new GenerateQrCodePage(driver);
-        generateQrCodePage.clickFirstEditButton();
-        System.out.println("✔ Step 10 PASSED – Edit button clicked (first row)");
+        // ── TC_10: Click first Edit button (only once) ────────────────────────
+        page.clickFirstEditButton();
+        ReportManager.logStep("GenerateQrCode", "TC_10 – Click Edit Button (first row)", true);
+        sleep(2_000);
+        takeScreenshot("tc10_edit_button");
         driver.navigate().back();
+        sleep(2_000);
+
+        // ── TC_11: Click first Delete button ─────────────────────────────────
+        page.clickFirstDeleteButton();
+        ReportManager.logStep("GenerateQrCode", "TC_11 – Click Delete Button (first row)", true);
+        sleep(2_000);
+        takeScreenshot("tc11_delete_button");
+
+        System.out.println("[GenerateQrCodeTest] ✅ generateQrCodeFullFlowTest PASSED");
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Step 11 – Click first "Delete" button in the table
-    // ─────────────────────────────────────────────────────────────────────────
-    @Test(priority = 11,
-          dependsOnMethods = "testClickFirstEditButton",
-          description = "Step 11: Click first Delete button in Generate Code table")
-    public void testClickFirstDeleteButton() {
-        GenerateQrCodePage generateQrCodePage = new GenerateQrCodePage(driver);
-        generateQrCodePage.clickFirstDeleteButton();
-        System.out.println("✔ Step 11 PASSED – Delete button clicked (first row)");
+    // ── Screenshot helper ─────────────────────────────────────────────────────
+
+    private void takeScreenshot(String testName) {
+        try {
+            Files.createDirectories(Paths.get("screenshots"));
+            String timestamp = LocalDateTime.now()
+                    .format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+            String fileName = "screenshots/" + testName + "_" + timestamp + ".png";
+
+            File src = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
+            Files.copy(src.toPath(), Paths.get(fileName));
+
+            System.out.println("[GenerateQrCodeTest] ✔ Screenshot saved: " + fileName);
+        } catch (Exception e) {
+            System.err.println("[GenerateQrCodeTest] ✘ Screenshot failed: " + e.getMessage());
+        }
+    }
+
+    // ── Sleep helper ──────────────────────────────────────────────────────────
+
+    private void sleep(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 }
