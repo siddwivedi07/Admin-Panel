@@ -4,13 +4,17 @@ import com.dams.base.BaseTest;
 import com.dams.pages.GenerateQrCodePage;
 import com.dams.pages.LoginPage;
 import com.dams.report.ReportManager;
+import org.openqa.selenium.By;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.annotations.Test;
 
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -19,24 +23,35 @@ import java.time.format.DateTimeFormatter;
  * Package : com.dams.tests.GenerateQrCode
  * Suite   : testng.xml → <class name="com.dams.tests.GenerateQrCode.GenerateQrCodeTest"/>
  *
- * Single @Test method so that all steps (Login + TC_01 … TC_11)
- * run in one browser session — the same pattern used by PaymentEmiTest.
+ * Single @Test method so all steps (Login + TC_01 … TC_11)
+ * run in one browser session — same pattern as PaymentEmiTest.
  */
 public class GenerateQrCodeTest extends BaseTest {
 
     private static final String START_DATE = "2025-01-01";
     private static final String END_DATE   = "2025-03-31";
 
+    // Sidebar indicator — present once the dashboard has fully loaded after login
+    private static final By SIDEBAR_MENU = By.cssSelector(
+        ".ant-layout-sider, .ant-menu, li.ant-menu-item"
+    );
+
     @Test(description = "Generate QR Code – full flow: login → Partner QR Report filters → Generate Code CRUD")
     public void generateQrCodeFullFlowTest() {
 
         // ── Step 0: Login ─────────────────────────────────────────────────────
-        System.out.println("[GenerateQrCodeTest] Step 0: Logging in to admin portal...");
+        System.out.println("[GenerateQrCodeTest] Step 0: Logging in...");
         LoginPage loginPage = new LoginPage(driver);
         loginPage.loginToAdminPortal();
         ReportManager.logStep("GenerateQrCode", "Step 0 – Login", true);
 
-        sleep(5_000);
+        // Wait for dashboard sidebar to fully render before interacting with menu
+        // LoginTest uses 20s sleep; we wait for sidebar element + extra buffer
+        System.out.println("[GenerateQrCodeTest] Step 0: Waiting for dashboard to load...");
+        sleep(20_000);
+        new WebDriverWait(driver, Duration.ofSeconds(30))
+            .until(ExpectedConditions.presenceOfElementLocated(SIDEBAR_MENU));
+        sleep(3_000);
 
         GenerateQrCodePage page = new GenerateQrCodePage(driver);
 
