@@ -28,12 +28,9 @@ public class GenerateQrCodePage {
     // ── Locators ──────────────────────────────────────────────────────────────
 
     // Step 1 – Generate QR Code sidebar/menu link
+    // Mirrors PaymentEmiPage pattern: href + visible text
     private final By generateQrCodeMenuLink = By.xpath(
-        "//a[@href='/qrcode-generate'] | " +
-        "//li[contains(@data-menu-id,'/qrcode-generate')]//a | " +
-        "//*[contains(translate(normalize-space(.)," +
-        "'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ')," +
-        "'GENERATE QR CODE') and (self::a or self::span)]"
+        "//a[@href='/qrcode-generate' and normalize-space(.)='Generate QR Code']"
     );
 
     // Step 2 – Partner QR Code Report card
