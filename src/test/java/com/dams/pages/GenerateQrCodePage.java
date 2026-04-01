@@ -28,9 +28,13 @@ public class GenerateQrCodePage {
     // ── Locators ──────────────────────────────────────────────────────────────
 
     // Step 1 – Generate QR Code sidebar/menu link
-    // Mirrors PaymentEmiPage pattern: href + visible text
+    // The <a> tag contains an <img> + <span class="ant-menu-title-content">,
+    // so normalize-space(.) on the <a> includes icon text. We match on the
+    // <span> child text inside the <a href='/qrcode-generate'> instead.
     private final By generateQrCodeMenuLink = By.xpath(
-        "//a[@href='/qrcode-generate' and normalize-space(.)='Generate QR Code']"
+        "//a[@href='/qrcode-generate']" +
+        "[.//*[contains(@class,'ant-menu-title-content') and " +
+        "normalize-space(.)='Generate QR Code']]"
     );
 
     // Step 2 – Partner QR Code Report card
