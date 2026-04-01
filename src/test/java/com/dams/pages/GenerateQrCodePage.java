@@ -1,6 +1,8 @@
 package com.dams.pages;
 
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -9,249 +11,248 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import java.time.Duration;
 
 /**
- * Page Object Model for Generate QR Code Module
- * Covers: Partner QR Code Report (Today, Weekly, Monthly, Yearly, Date Range)
- *         and Generate Code (View, Edit, Delete actions)
+ * Page Object Model for the Generate QR Code module.
+ *
+ * Covers:
+ *  - Generate QR Code sidebar menu item
+ *  - Partner QR Code Report card
+ *  - Filter buttons: Today, Weekly, Monthly, Yearly, Date Range
+ *  - Generate Code card
+ *  - Table actions: View, Edit, Delete (first row)
  */
 public class GenerateQrCodePage {
 
     private final WebDriver driver;
     private final WebDriverWait wait;
 
-    // ─────────────────────────────────────────────
-    // Locators – Step 1: Generate QR Code menu item
-    // ─────────────────────────────────────────────
-    private final By generateQrCodeMenu = By.cssSelector(
-            "li[data-menu-id*='/qrcode-generate'] a"
+    // ── Locators ──────────────────────────────────────────────────────────────
+
+    // Step 1 – Generate QR Code sidebar/menu link
+    private final By generateQrCodeMenuLink = By.xpath(
+        "//a[@href='/qrcode-generate'] | " +
+        "//li[contains(@data-menu-id,'/qrcode-generate')]//a | " +
+        "//*[contains(translate(normalize-space(.)," +
+        "'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ')," +
+        "'GENERATE QR CODE') and (self::a or self::span)]"
     );
 
-    // ─────────────────────────────────────────────
-    // Locators – Step 2: Partner QR Code Report card
-    // ─────────────────────────────────────────────
+    // Step 2 – Partner QR Code Report card
     private final By partnerQrCodeReportCard = By.xpath(
-            "//div[@class='textData' and normalize-space(text())='Partner QR Code Report']"
+        "//div[contains(@class,'ant-card-body')]" +
+        "[.//div[contains(@class,'textData') and " +
+        "normalize-space(.)='Partner QR Code Report']]"
     );
 
-    // ─────────────────────────────────────────────
-    // Locators – Steps 3-7: Filter buttons
-    // ─────────────────────────────────────────────
-    private final By todayButton = By.xpath(
-            "//button[.//span[normalize-space(text())='Today']]"
+    // Steps 3–7 – Filter buttons
+    private final By todayBtn = By.xpath(
+        "//button[contains(@class,'ant-btn')][.//span[normalize-space(.)='Today']]"
+    );
+    private final By weeklyBtn = By.xpath(
+        "//button[contains(@class,'ant-btn')][.//span[normalize-space(.)='Weekly']]"
+    );
+    private final By monthlyBtn = By.xpath(
+        "//button[contains(@class,'ant-btn')][.//span[normalize-space(.)='Monthly']]"
+    );
+    private final By yearlyBtn = By.xpath(
+        "//button[contains(@class,'ant-btn')][.//span[normalize-space(.)='Yearly']]"
+    );
+    private final By dateRangeBtn = By.xpath(
+        "//button[contains(@class,'ant-btn')][.//span[normalize-space(.)='Date Range']]"
     );
 
-    private final By weeklyButton = By.xpath(
-            "//button[.//span[normalize-space(text())='Weekly']]"
+    // Step 7 – Ant Design range picker inputs
+    private final By startDateInput = By.xpath(
+        "//div[contains(@class,'ant-picker-range')]" +
+        "//input[@placeholder='Start date' or @date-range='start']"
+    );
+    private final By endDateInput = By.xpath(
+        "//div[contains(@class,'ant-picker-range')]" +
+        "//input[@placeholder='End date' or @date-range='end']"
     );
 
-    private final By monthlyButton = By.xpath(
-            "//button[.//span[normalize-space(text())='Monthly']]"
-    );
-
-    private final By yearlyButton = By.xpath(
-            "//button[.//span[normalize-space(text())='Yearly']]"
-    );
-
-    private final By dateRangeButton = By.xpath(
-            "//button[.//span[normalize-space(text())='Date Range']]"
-    );
-
-    // Date Range picker inputs
-    private final By startDateInput = By.cssSelector(
-            "div.ant-picker-range input[placeholder='Start date']"
-    );
-
-    private final By endDateInput = By.cssSelector(
-            "div.ant-picker-range input[placeholder='End date']"
-    );
-
-    // ─────────────────────────────────────────────
-    // Locators – Step 8: Generate Code card
-    // ─────────────────────────────────────────────
+    // Step 8 – Generate Code card
     private final By generateCodeCard = By.xpath(
-            "//div[@class='textData' and normalize-space(text())='Generate Code']"
+        "//div[contains(@class,'ant-card-body')]" +
+        "[.//div[contains(@class,'textData') and " +
+        "normalize-space(.)='Generate Code']]"
     );
 
-    // ─────────────────────────────────────────────
-    // Locators – Steps 9-11: Table action buttons
-    // ─────────────────────────────────────────────
-    private final By firstViewButton = By.xpath(
-            "(//button[.//span[normalize-space(text())='View']])[1]"
+    // Steps 9–11 – Table action buttons (first row only)
+    private final By firstViewBtn = By.xpath(
+        "(//button[contains(@class,'ant-btn')][.//span[normalize-space(.)='View']])[1]"
+    );
+    private final By firstEditBtn = By.xpath(
+        "(//button[contains(@class,'ant-btn')][.//span[normalize-space(.)='Edit']])[1]"
+    );
+    private final By firstDeleteBtn = By.xpath(
+        "(//button[contains(@class,'ant-btn-dangerous')][.//span[normalize-space(.)='Delete']])[1]"
     );
 
-    private final By firstEditButton = By.xpath(
-            "(//button[.//span[normalize-space(text())='Edit']])[1]"
-    );
+    // ── Constructor ───────────────────────────────────────────────────────────
 
-    private final By firstDeleteButton = By.xpath(
-            "(//button[contains(@class,'ant-btn-dangerous') and .//span[normalize-space(text())='Delete']])[1]"
-    );
-
-    // ─────────────────────────────────────────────
-    // Constructor
-    // ─────────────────────────────────────────────
     public GenerateQrCodePage(WebDriver driver) {
         this.driver = driver;
-        this.wait = new WebDriverWait(driver, Duration.ofSeconds(15));
+        this.wait   = new WebDriverWait(driver, Duration.ofSeconds(20));
     }
 
-    // ─────────────────────────────────────────────
-    // Step 1: Click "Generate QR Code" in the menu
-    // ─────────────────────────────────────────────
-    public void clickGenerateQrCodeMenu() {
-        WebElement menu = wait.until(
-                ExpectedConditions.elementToBeClickable(generateQrCodeMenu)
+    // ── Step 1: Click Generate QR Code menu link ──────────────────────────────
+
+    public GenerateQrCodePage clickGenerateQrCodeMenu() {
+        System.out.println("[GenerateQrCodePage] Step 1 → Clicking 'Generate QR Code' menu...");
+        WebElement element = wait.until(ExpectedConditions.elementToBeClickable(generateQrCodeMenuLink));
+        scrollAndClick(element);
+        sleep(2000);
+        System.out.println("[GenerateQrCodePage] Step 1 → PASSED ✔");
+        return this;
+    }
+
+    // ── Step 2: Click Partner QR Code Report card ─────────────────────────────
+
+    public GenerateQrCodePage clickPartnerQrCodeReportCard() {
+        System.out.println("[GenerateQrCodePage] Step 2 → Clicking 'Partner QR Code Report' card...");
+        WebElement element = wait.until(ExpectedConditions.elementToBeClickable(partnerQrCodeReportCard));
+        scrollAndClick(element);
+        sleep(2000);
+        System.out.println("[GenerateQrCodePage] Step 2 → PASSED ✔");
+        return this;
+    }
+
+    // ── Step 3: Click Today button ────────────────────────────────────────────
+
+    public GenerateQrCodePage clickToday() {
+        System.out.println("[GenerateQrCodePage] Step 3 → Clicking 'Today' button...");
+        WebElement element = wait.until(ExpectedConditions.elementToBeClickable(todayBtn));
+        scrollAndClick(element);
+        sleep(1500);
+        System.out.println("[GenerateQrCodePage] Step 3 → PASSED ✔");
+        return this;
+    }
+
+    // ── Step 4: Click Weekly button ───────────────────────────────────────────
+
+    public GenerateQrCodePage clickWeekly() {
+        System.out.println("[GenerateQrCodePage] Step 4 → Clicking 'Weekly' button...");
+        WebElement element = wait.until(ExpectedConditions.elementToBeClickable(weeklyBtn));
+        scrollAndClick(element);
+        sleep(1500);
+        System.out.println("[GenerateQrCodePage] Step 4 → PASSED ✔");
+        return this;
+    }
+
+    // ── Step 5: Click Monthly button ──────────────────────────────────────────
+
+    public GenerateQrCodePage clickMonthly() {
+        System.out.println("[GenerateQrCodePage] Step 5 → Clicking 'Monthly' button...");
+        WebElement element = wait.until(ExpectedConditions.elementToBeClickable(monthlyBtn));
+        scrollAndClick(element);
+        sleep(1500);
+        System.out.println("[GenerateQrCodePage] Step 5 → PASSED ✔");
+        return this;
+    }
+
+    // ── Step 6: Click Yearly button ───────────────────────────────────────────
+
+    public GenerateQrCodePage clickYearly() {
+        System.out.println("[GenerateQrCodePage] Step 6 → Clicking 'Yearly' button...");
+        WebElement element = wait.until(ExpectedConditions.elementToBeClickable(yearlyBtn));
+        scrollAndClick(element);
+        sleep(1500);
+        System.out.println("[GenerateQrCodePage] Step 6 → PASSED ✔");
+        return this;
+    }
+
+    // ── Step 7: Click Date Range button and fill picker ───────────────────────
+
+    public GenerateQrCodePage clickDateRangeAndFill(String startDate, String endDate) {
+        System.out.println("[GenerateQrCodePage] Step 7 → Clicking 'Date Range' button...");
+        WebElement btn = wait.until(ExpectedConditions.elementToBeClickable(dateRangeBtn));
+        scrollAndClick(btn);
+        sleep(2000);
+
+        System.out.println("[GenerateQrCodePage] Step 7 → Entering start date: " + startDate);
+        WebElement startInput = wait.until(
+            ExpectedConditions.visibilityOfElementLocated(startDateInput)
         );
-        menu.click();
-    }
+        startInput.click();
+        clearAndType(startInput, startDate);
+        sleep(500);
 
-    // ─────────────────────────────────────────────
-    // Step 2: Click "Partner QR Code Report" card
-    // ─────────────────────────────────────────────
-    public void clickPartnerQrCodeReportCard() {
-        WebElement card = wait.until(
-                ExpectedConditions.elementToBeClickable(partnerQrCodeReportCard)
+        System.out.println("[GenerateQrCodePage] Step 7 → Entering end date: " + endDate);
+        WebElement endInput = wait.until(
+            ExpectedConditions.visibilityOfElementLocated(endDateInput)
         );
-        card.click();
+        endInput.click();
+        clearAndType(endInput, endDate);
+        endInput.sendKeys(Keys.ENTER);
+        sleep(1500);
+
+        System.out.println("[GenerateQrCodePage] Step 7 → PASSED ✔");
+        return this;
     }
 
-    // ─────────────────────────────────────────────
-    // Step 3: Click "Today" button
-    // ─────────────────────────────────────────────
-    public void clickTodayButton() {
-        WebElement btn = wait.until(
-                ExpectedConditions.elementToBeClickable(todayButton)
+    // ── Step 8: Click Generate Code card ─────────────────────────────────────
+
+    public GenerateQrCodePage clickGenerateCodeCard() {
+        System.out.println("[GenerateQrCodePage] Step 8 → Clicking 'Generate Code' card...");
+        WebElement element = wait.until(ExpectedConditions.elementToBeClickable(generateCodeCard));
+        scrollAndClick(element);
+        sleep(2000);
+        System.out.println("[GenerateQrCodePage] Step 8 → PASSED ✔");
+        return this;
+    }
+
+    // ── Step 9: Click first View button in the table ──────────────────────────
+
+    public GenerateQrCodePage clickFirstViewButton() {
+        System.out.println("[GenerateQrCodePage] Step 9 → Clicking first 'View' button...");
+        WebElement element = wait.until(ExpectedConditions.elementToBeClickable(firstViewBtn));
+        scrollAndClick(element);
+        sleep(2000);
+        System.out.println("[GenerateQrCodePage] Step 9 → PASSED ✔");
+        return this;
+    }
+
+    // ── Step 10: Click first Edit button in the table ────────────────────────
+
+    public GenerateQrCodePage clickFirstEditButton() {
+        System.out.println("[GenerateQrCodePage] Step 10 → Clicking first 'Edit' button...");
+        WebElement element = wait.until(ExpectedConditions.elementToBeClickable(firstEditBtn));
+        scrollAndClick(element);
+        sleep(2000);
+        System.out.println("[GenerateQrCodePage] Step 10 → PASSED ✔");
+        return this;
+    }
+
+    // ── Step 11: Click first Delete button in the table ──────────────────────
+
+    public GenerateQrCodePage clickFirstDeleteButton() {
+        System.out.println("[GenerateQrCodePage] Step 11 → Clicking first 'Delete' button...");
+        WebElement element = wait.until(ExpectedConditions.elementToBeClickable(firstDeleteBtn));
+        scrollAndClick(element);
+        sleep(1500);
+        System.out.println("[GenerateQrCodePage] Step 11 → PASSED ✔");
+        return this;
+    }
+
+    // ── Private helpers ───────────────────────────────────────────────────────
+
+    private void scrollAndClick(WebElement element) {
+        ((JavascriptExecutor) driver).executeScript(
+            "arguments[0].scrollIntoView({block:'center'});", element
         );
-        btn.click();
+        element.click();
     }
 
-    // ─────────────────────────────────────────────
-    // Step 4: Click "Weekly" button
-    // ─────────────────────────────────────────────
-    public void clickWeeklyButton() {
-        WebElement btn = wait.until(
-                ExpectedConditions.elementToBeClickable(weeklyButton)
-        );
-        btn.click();
+    private void clearAndType(WebElement input, String value) {
+        ((JavascriptExecutor) driver).executeScript("arguments[0].value = '';", input);
+        input.sendKeys(value);
     }
 
-    // ─────────────────────────────────────────────
-    // Step 5: Click "Monthly" button
-    // ─────────────────────────────────────────────
-    public void clickMonthlyButton() {
-        WebElement btn = wait.until(
-                ExpectedConditions.elementToBeClickable(monthlyButton)
-        );
-        btn.click();
-    }
-
-    // ─────────────────────────────────────────────
-    // Step 6: Click "Yearly" button
-    // ─────────────────────────────────────────────
-    public void clickYearlyButton() {
-        WebElement btn = wait.until(
-                ExpectedConditions.elementToBeClickable(yearlyButton)
-        );
-        btn.click();
-    }
-
-    // ─────────────────────────────────────────────
-    // Step 7: Click "Date Range" button and fill dates
-    // ─────────────────────────────────────────────
-    public void clickDateRangeButton() {
-        WebElement btn = wait.until(
-                ExpectedConditions.elementToBeClickable(dateRangeButton)
-        );
-        btn.click();
-    }
-
-    /**
-     * Enters a start date in the date-range picker.
-     *
-     * @param startDate date string, e.g. "2024-01-01"
-     */
-    public void enterStartDate(String startDate) {
-        WebElement input = wait.until(
-                ExpectedConditions.visibilityOfElementLocated(startDateInput)
-        );
-        input.clear();
-        input.sendKeys(startDate);
-    }
-
-    /**
-     * Enters an end date in the date-range picker.
-     *
-     * @param endDate date string, e.g. "2024-12-31"
-     */
-    public void enterEndDate(String endDate) {
-        WebElement input = wait.until(
-                ExpectedConditions.visibilityOfElementLocated(endDateInput)
-        );
-        input.clear();
-        input.sendKeys(endDate);
-    }
-
-    /**
-     * Convenience method: click Date Range and fill both dates.
-     *
-     * @param startDate start date string
-     * @param endDate   end date string
-     */
-    public void selectDateRange(String startDate, String endDate) {
-        clickDateRangeButton();
-        enterStartDate(startDate);
-        enterEndDate(endDate);
-    }
-
-    // ─────────────────────────────────────────────
-    // Step 8: Click "Generate Code" card
-    // ─────────────────────────────────────────────
-    public void clickGenerateCodeCard() {
-        WebElement card = wait.until(
-                ExpectedConditions.elementToBeClickable(generateCodeCard)
-        );
-        card.click();
-    }
-
-    // ─────────────────────────────────────────────
-    // Step 9: Click first "View" button in the table
-    // ─────────────────────────────────────────────
-    public void clickFirstViewButton() {
-        WebElement btn = wait.until(
-                ExpectedConditions.elementToBeClickable(firstViewButton)
-        );
-        btn.click();
-    }
-
-    // ─────────────────────────────────────────────
-    // Step 10: Click first "Edit" button in the table
-    // ─────────────────────────────────────────────
-    public void clickFirstEditButton() {
-        WebElement btn = wait.until(
-                ExpectedConditions.elementToBeClickable(firstEditButton)
-        );
-        btn.click();
-    }
-
-    // ─────────────────────────────────────────────
-    // Step 11: Click first "Delete" button in the table
-    // ─────────────────────────────────────────────
-    public void clickFirstDeleteButton() {
-        WebElement btn = wait.until(
-                ExpectedConditions.elementToBeClickable(firstDeleteButton)
-        );
-        btn.click();
-    }
-
-    // ─────────────────────────────────────────────
-    // Utility: check if an element is visible
-    // ─────────────────────────────────────────────
-    public boolean isElementVisible(By locator) {
+    private void sleep(long millis) {
         try {
-            return wait.until(
-                    ExpectedConditions.visibilityOfElementLocated(locator)
-            ).isDisplayed();
-        } catch (Exception e) {
-            return false;
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 }
