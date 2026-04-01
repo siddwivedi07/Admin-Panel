@@ -31,9 +31,11 @@ public class GenerateQrCodeTest extends BaseTest {
     private static final String START_DATE = "2025-01-01";
     private static final String END_DATE   = "2025-03-31";
 
-    // Sidebar indicator — present once the dashboard has fully loaded after login
-    private static final By SIDEBAR_MENU = By.cssSelector(
-        ".ant-layout-sider, .ant-menu, li.ant-menu-item"
+    // The exact menu link locator — must be visible before we proceed
+    private static final By QR_MENU_LINK = By.xpath(
+        "//a[@href='/qrcode-generate']" +
+        "[.//*[contains(@class,'ant-menu-title-content') and " +
+        "normalize-space(.)='Generate QR Code']]"
     );
 
     @Test(description = "Generate QR Code – full flow: login → Partner QR Report filters → Generate Code CRUD")
@@ -45,26 +47,26 @@ public class GenerateQrCodeTest extends BaseTest {
         loginPage.loginToAdminPortal();
         ReportManager.logStep("GenerateQrCode", "Step 0 – Login", true);
 
-        // Wait for dashboard sidebar to fully render before interacting with menu
-        // LoginTest uses 20s sleep; we wait for sidebar element + extra buffer
-        System.out.println("[GenerateQrCodeTest] Step 0: Waiting for dashboard to load...");
-        sleep(20_000);
-        new WebDriverWait(driver, Duration.ofSeconds(30))
-            .until(ExpectedConditions.presenceOfElementLocated(SIDEBAR_MENU));
-        sleep(3_000);
+        // Allow post-login dashboard to settle, then wait until the QR menu
+        // link is actually present in DOM — avoids brittle fixed sleeps
+        sleep(5_000);
+        System.out.println("[GenerateQrCodeTest] Step 0: Waiting for QR Code menu link...");
+        new WebDriverWait(driver, Duration.ofSeconds(60))
+            .until(ExpectedConditions.presenceOfElementLocated(QR_MENU_LINK));
+        System.out.println("[GenerateQrCodeTest] Step 0: Dashboard ready ✔");
 
         GenerateQrCodePage page = new GenerateQrCodePage(driver);
 
         // ── TC_01: Click Generate QR Code menu link ───────────────────────────
         page.clickGenerateQrCodeMenu();
         ReportManager.logStep("GenerateQrCode", "TC_01 – Click Generate QR Code Menu", true);
-        sleep(2_000);
+        sleep(3_000);
         takeScreenshot("tc01_generate_qr_code_menu");
 
         // ── TC_02: Click Partner QR Code Report card ──────────────────────────
         page.clickPartnerQrCodeReportCard();
         ReportManager.logStep("GenerateQrCode", "TC_02 – Click Partner QR Code Report Card", true);
-        sleep(2_000);
+        sleep(3_000);
         takeScreenshot("tc02_partner_qr_code_report");
 
         // ── TC_03: Click Today button ─────────────────────────────────────────
@@ -94,15 +96,15 @@ public class GenerateQrCodeTest extends BaseTest {
         // ── TC_07: Click Date Range and fill dates ────────────────────────────
         page.clickDateRangeAndFill(START_DATE, END_DATE);
         ReportManager.logStep("GenerateQrCode", "TC_07 – Click Date Range and Fill Dates", true);
-        sleep(2_000);
+        sleep(3_000);
         takeScreenshot("tc07_date_range_filter");
 
         // ── TC_08: Navigate back and click Generate Code card ─────────────────
         driver.navigate().back();
-        sleep(2_000);
+        sleep(3_000);
         page.clickGenerateCodeCard();
         ReportManager.logStep("GenerateQrCode", "TC_08 – Click Generate Code Card", true);
-        sleep(2_000);
+        sleep(3_000);
         takeScreenshot("tc08_generate_code_card");
 
         // ── TC_09: Click first View button (only once) ────────────────────────
@@ -111,7 +113,7 @@ public class GenerateQrCodeTest extends BaseTest {
         sleep(2_000);
         takeScreenshot("tc09_view_button");
         driver.navigate().back();
-        sleep(2_000);
+        sleep(3_000);
 
         // ── TC_10: Click first Edit button (only once) ────────────────────────
         page.clickFirstEditButton();
@@ -119,7 +121,7 @@ public class GenerateQrCodeTest extends BaseTest {
         sleep(2_000);
         takeScreenshot("tc10_edit_button");
         driver.navigate().back();
-        sleep(2_000);
+        sleep(3_000);
 
         // ── TC_11: Click first Delete button ─────────────────────────────────
         page.clickFirstDeleteButton();
