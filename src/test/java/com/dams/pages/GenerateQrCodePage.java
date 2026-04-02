@@ -29,8 +29,6 @@ public class GenerateQrCodePage {
     // ── Locators ──────────────────────────────────────────────────────────────
 
     // Step 1 – Generate QR Code sidebar/menu link (primary)
-    // Matches <a href='/qrcode-generate'> that contains a child span with the
-    // 'ant-menu-title-content' class and text 'Generate QR Code'.
     private final By generateQrCodeMenuLink = By.xpath(
         "//a[@href='/qrcode-generate']" +
         "[.//*[contains(@class,'ant-menu-title-content') and " +
@@ -40,13 +38,6 @@ public class GenerateQrCodePage {
     // Step 1 – Fallback: match by href alone (collapsed/icon-only sidebar)
     private final By generateQrCodeMenuLinkHref = By.xpath(
         "//a[@href='/qrcode-generate']"
-    );
-
-    // Step 1 – Fallback: sidebar trigger button to expand a collapsed menu
-    private final By sidebarCollapseToggle = By.xpath(
-        "//button[contains(@class,'ant-layout-sider-trigger') " +
-        "or contains(@class,'ant-btn') and .//*[local-name()='svg']]" +
-        "[ancestor::*[contains(@class,'ant-layout-sider')]]"
     );
 
     // Step 2 – Partner QR Code Report card
@@ -91,55 +82,45 @@ public class GenerateQrCodePage {
     );
 
     // Steps 9–11 – Table action buttons (first row only)
-    // HTML: <button class="ant-btn ... ant-btn-link ..."><span>View</span></button>
+    // Real HTML: <button class="ant-btn ... ant-btn-link ..."><span>View</span></button>
     private final By firstViewBtn = By.xpath(
         "(//button[contains(@class,'ant-btn-link')][.//span[normalize-space(.)='View']])[1]"
     );
-    // HTML: <button class="ant-btn ... ant-btn-link ant-btn-color-link ant-btn-variant-link"><span>Edit</span></button>
+
+    // Real HTML: <button class="ant-btn ... ant-btn-link ant-btn-color-link ant-btn-variant-link"><span>Edit</span></button>
     private final By firstEditBtn = By.xpath(
         "(//button[contains(@class,'ant-btn-link')][.//span[normalize-space(.)='Edit']])[1]"
     );
-    // HTML: <button class="ant-btn ... ant-btn-link ant-btn-dangerous ..."><span>Delete</span></button>
+
+    // Real HTML: <button class="ant-btn ... ant-btn-link ant-btn-dangerous ..."><span>Delete</span></button>
     private final By firstDeleteBtn = By.xpath(
-        "(//button[contains(@class,'ant-btn-link') and contains(@class,'ant-btn-dangerous')][.//span[normalize-space(.)='Delete']])[1]"
+        "(//button[contains(@class,'ant-btn-link') and contains(@class,'ant-btn-dangerous')]" +
+        "[.//span[normalize-space(.)='Delete']])[1]"
+    );
+
+    // Ant Design table row — used to confirm the table has loaded
+    private final By tableRow = By.xpath(
+        "//tr[contains(@class,'ant-table-row')]"
     );
 
     // ── Constructor ───────────────────────────────────────────────────────────
 
     public GenerateQrCodePage(WebDriver driver) {
         this.driver = driver;
-        this.wait   = new WebDriverWait(driver, Duration.ofSeconds(20));
+        this.wait   = new WebDriverWait(driver, Duration.ofSeconds(30));
     }
 
     // ── Step 1: Click Generate QR Code menu link ──────────────────────────────
 
-    /**
-     * Clicks the 'Generate QR Code' sidebar menu entry.
-     *
-     * Fix: after login the Ant Design sidebar can be in a collapsed (icon-only)
-     * state, where the primary XPath fails because the ant-menu-title-content
-     * span is not rendered.  We try:
-     *   1. Primary locator (full href + content match)
-     *   2. href-only locator (collapsed state)
-     *   3. Expand the sidebar if it is collapsed, then retry
-     */
     public GenerateQrCodePage clickGenerateQrCodeMenu() {
         System.out.println("[GenerateQrCodePage] Step 1 → Clicking 'Generate QR Code' menu...");
-
         WebElement element = findQrMenuElement();
         scrollAndClick(element);
         sleep(2000);
-
         System.out.println("[GenerateQrCodePage] Step 1 → PASSED ✔");
         return this;
     }
 
-    /**
-     * Resolves the QR Code menu WebElement using a two-pass approach:
-     *   Pass 1: primary locator (full XPath with content span).
-     *   Pass 2: href-only locator (handles collapsed sidebar).
-     *   Pass 3: expand sidebar via toggle button, then retry both locators.
-     */
     private WebElement findQrMenuElement() {
         // Pass 1 — primary
         try {
@@ -147,37 +128,27 @@ public class GenerateQrCodePage {
         } catch (Exception ignored) {
             System.out.println("[GenerateQrCodePage] Primary menu locator not clickable — trying href-only...");
         }
-
-        // Pass 2 — href-only
+        // Pass 2 — href-only (collapsed sidebar)
         try {
             return wait.until(ExpectedConditions.elementToBeClickable(generateQrCodeMenuLinkHref));
         } catch (Exception ignored) {
             System.out.println("[GenerateQrCodePage] href-only locator not clickable — trying to expand sidebar...");
         }
-
-        // Pass 3 — try to expand collapsed sidebar, then retry
+        // Pass 3 — expand sidebar, then retry
         tryExpandSidebar();
         sleep(1500);
-
         try {
             return wait.until(ExpectedConditions.elementToBeClickable(generateQrCodeMenuLink));
         } catch (Exception ignored) {
-            // last chance — href-only after expand
+            // last chance
         }
-
         return wait.until(ExpectedConditions.elementToBeClickable(generateQrCodeMenuLinkHref));
     }
 
-    /**
-     * If the sidebar is collapsed, clicks the collapse/expand toggle button.
-     * Safe to call even if the sidebar is already expanded (toggle not found → no-op).
-     */
     private void tryExpandSidebar() {
         try {
-            // Ant Design sider trigger is a <span role="img"> inside the sider div
             By siderTrigger = By.cssSelector(
                 ".ant-layout-sider-trigger, " +
-                "[class*='sider'] button, " +
                 ".ant-layout-sider .anticon-menu-fold, " +
                 ".ant-layout-sider .anticon-menu-unfold"
             );
@@ -291,9 +262,11 @@ public class GenerateQrCodePage {
     // ── Step 9: Click first View button in the table ──────────────────────────
 
     public GenerateQrCodePage clickFirstViewButton() {
+        System.out.println("[GenerateQrCodePage] Step 9 → Waiting for table to load...");
+        waitForTableRows();
         System.out.println("[GenerateQrCodePage] Step 9 → Clicking first 'View' button...");
         WebElement element = wait.until(ExpectedConditions.elementToBeClickable(firstViewBtn));
-        scrollAndClick(element);
+        scrollAndJsClick(element);
         sleep(2000);
         System.out.println("[GenerateQrCodePage] Step 9 → PASSED ✔");
         return this;
@@ -302,15 +275,20 @@ public class GenerateQrCodePage {
     // ── Step 10: Click first Edit button in the table ────────────────────────
 
     /**
-     * Waits for the table to fully reload after any navigation, then clicks
-     * the first Edit button. Uses JS click as fallback for ant-btn-link buttons
-     * which can be intercepted by overlapping elements after page transitions.
+     * FIX: After navigate().back() from View, the browser returns to the
+     * Generate Code CARD page (not the table). The test must call
+     * clickGenerateCodeCard() again before this method.
+     * This method waits for the table rows to appear, then clicks Edit (once).
+     *
+     * Real HTML of Edit button:
+     * <button type="button"
+     *   class="ant-btn css-tjsggz ant-btn-link ant-btn-color-link ant-btn-variant-link">
+     *   <span>Edit</span>
+     * </button>
      */
     public GenerateQrCodePage clickFirstEditButton() {
-        System.out.println("[GenerateQrCodePage] Step 10 → Waiting for table to reload...");
-        // Wait for at least one Edit button to be present in the DOM first
-        wait.until(ExpectedConditions.presenceOfElementLocated(firstEditBtn));
-        sleep(1000); // allow any loading spinner to clear
+        System.out.println("[GenerateQrCodePage] Step 10 → Waiting for table to load...");
+        waitForTableRows();
         System.out.println("[GenerateQrCodePage] Step 10 → Clicking first 'Edit' button...");
         WebElement element = wait.until(ExpectedConditions.elementToBeClickable(firstEditBtn));
         scrollAndJsClick(element);
@@ -322,13 +300,18 @@ public class GenerateQrCodePage {
     // ── Step 11: Click first Delete button in the table ──────────────────────
 
     /**
-     * Waits for the table to be present, then clicks the first Delete button.
-     * Uses JS click for reliability with ant-btn-link ant-btn-dangerous buttons.
+     * FIX: Same reasoning as Step 10 — must be on the table page before calling.
+     *
+     * Real HTML of Delete button:
+     * <button aria-describedby=":rg8:" type="button"
+     *   class="ant-btn css-tjsggz ant-btn-link ant-btn-dangerous
+     *          ant-btn-color-dangerous ant-btn-variant-link">
+     *   <span>Delete</span>
+     * </button>
      */
     public GenerateQrCodePage clickFirstDeleteButton() {
-        System.out.println("[GenerateQrCodePage] Step 11 → Waiting for table to reload...");
-        wait.until(ExpectedConditions.presenceOfElementLocated(firstDeleteBtn));
-        sleep(1000);
+        System.out.println("[GenerateQrCodePage] Step 11 → Waiting for table to load...");
+        waitForTableRows();
         System.out.println("[GenerateQrCodePage] Step 11 → Clicking first 'Delete' button...");
         WebElement element = wait.until(ExpectedConditions.elementToBeClickable(firstDeleteBtn));
         scrollAndJsClick(element);
@@ -339,6 +322,19 @@ public class GenerateQrCodePage {
 
     // ── Private helpers ───────────────────────────────────────────────────────
 
+    /**
+     * Waits up to 30 s for at least one ant-table-row to appear.
+     * Ensures the table has fully loaded before looking for action buttons.
+     */
+    private void waitForTableRows() {
+        try {
+            wait.until(ExpectedConditions.presenceOfElementLocated(tableRow));
+            sleep(500); // brief pause for any loading overlay to clear
+        } catch (Exception e) {
+            System.out.println("[GenerateQrCodePage] Warning: table rows not detected — proceeding anyway.");
+        }
+    }
+
     private void scrollAndClick(WebElement element) {
         ((JavascriptExecutor) driver).executeScript(
             "arguments[0].scrollIntoView({block:'center'});", element
@@ -347,9 +343,8 @@ public class GenerateQrCodePage {
     }
 
     /**
-     * Scrolls to the element and clicks it via JavaScript.
-     * Use for ant-btn-link buttons that can be stale or intercepted
-     * after a page navigation / table reload.
+     * JS click — bypasses any overlay/intercept issue common with
+     * ant-btn-link buttons after table reloads or page transitions.
      */
     private void scrollAndJsClick(WebElement element) {
         ((JavascriptExecutor) driver).executeScript(
