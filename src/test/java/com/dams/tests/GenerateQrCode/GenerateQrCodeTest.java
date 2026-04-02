@@ -135,7 +135,7 @@ public class GenerateQrCodeTest extends BaseTest {
         sleep(2_000);
         takeScreenshot("tc09_view_button");
         driver.navigate().back();
-        sleep(3_000);
+        sleep(5_000); // wait for table to fully reload before Edit click
 
         // ── TC_10: Click first Edit button (only once) ────────────────────────
         page.clickFirstEditButton();
@@ -143,7 +143,7 @@ public class GenerateQrCodeTest extends BaseTest {
         sleep(2_000);
         takeScreenshot("tc10_edit_button");
         driver.navigate().back();
-        sleep(3_000);
+        sleep(5_000); // wait for table to fully reload before Delete click
 
         // ── TC_11: Click first Delete button ─────────────────────────────────
         page.clickFirstDeleteButton();
