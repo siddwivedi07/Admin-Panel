@@ -26,8 +26,32 @@ import java.util.List;
  * Package : com.dams.tests.CeoReport
  * Suite   : testng.xml → <class name="com.dams.tests.CeoReport.CeoReportTest"/>
  *
- * Single @Test method so all steps (Login + TC_01 … TC_22)
- * run in one browser session.
+ * Single @Test method — all steps (Login + TC_01 … TC_23) run in one session.
+ *
+ * Corrected navigation flow:
+ *   TC_01  – Click CEO Report menu
+ *   TC_02  – Click Sales Report Partner card
+ *   TC_03  – Today filter  (Sales)
+ *   TC_04  – Weekly filter (Sales)
+ *   TC_05  – Monthly filter (Sales)
+ *   TC_06  – Yearly filter (Sales)
+ *   TC_07  – Date Range filter + dates (Sales)
+ *   TC_08  – Navigate back from Sales Report Partner
+ *   TC_09  – Click Instructor Report card
+ *   TC_10  – Navigate back from Instructor Report      ← FIX
+ *   TC_11  – Click Team Member Wise Sale card          ← now on CEO Report cards page
+ *   TC_12  – Today filter  (Team)
+ *   TC_13  – Weekly filter (Team)
+ *   TC_14  – Monthly filter (Team)
+ *   TC_15  – Yearly filter (Team)
+ *   TC_16  – Date Range filter + dates (Team)
+ *   TC_17  – Navigate back from Team Member Wise Sale
+ *   TC_18  – Click Category Wise Revenue card
+ *   TC_19  – Today segmented filter (Category)
+ *   TC_20  – Weekly segmented filter (Category)
+ *   TC_21  – Monthly segmented filter (Category)
+ *   TC_22  – Yearly segmented filter (Category)
+ *   TC_23  – Date Range segmented filter + dates (Category)
  */
 public class CeoReportTest extends BaseTest {
 
@@ -56,8 +80,8 @@ public class CeoReportTest extends BaseTest {
         "or contains(@class,'ant-layout-sider')]]"
     );
 
-    @Test(description = "CEO Report – full flow: login → Sales Report Partner filters → "
-            + "Instructor Report → Team Member Wise Sale filters → Category Wise Revenue filters")
+    @Test(description = "CEO Report – full flow: login → Sales Report Partner → "
+            + "Instructor Report → Team Member Wise Sale → Category Wise Revenue")
     public void ceoReportFullFlowTest() {
 
         // ── Step 0: Login ─────────────────────────────────────────────────────
@@ -69,7 +93,7 @@ public class CeoReportTest extends BaseTest {
         // Allow post-login dashboard to settle
         sleep(5_000);
 
-        // Wait for the sidebar/menu to fully load with multiple fallback strategies
+        // Wait for sidebar to fully load using multiple fallback strategies
         System.out.println("[CeoReportTest] Step 0: Waiting for CEO Report menu link...");
         waitForCeoMenuVisible();
         System.out.println("[CeoReportTest] Step 0: Dashboard ready ✔");
@@ -88,33 +112,33 @@ public class CeoReportTest extends BaseTest {
         sleep(3_000);
         takeScreenshot("tc02_sales_report_partner");
 
-        // ── TC_03: Click Today button (Sales Report Partner) ──────────────────
+        // ── TC_03: Today filter (Sales Report Partner) ────────────────────────
         page.clickSalesToday();
-        ReportManager.logStep("CeoReport", "TC_03 – Click Today Filter (Sales)", true);
+        ReportManager.logStep("CeoReport", "TC_03 – Today Filter (Sales)", true);
         sleep(2_000);
         takeScreenshot("tc03_sales_today");
 
-        // ── TC_04: Click Weekly button (Sales Report Partner) ─────────────────
+        // ── TC_04: Weekly filter (Sales Report Partner) ───────────────────────
         page.clickSalesWeekly();
-        ReportManager.logStep("CeoReport", "TC_04 – Click Weekly Filter (Sales)", true);
+        ReportManager.logStep("CeoReport", "TC_04 – Weekly Filter (Sales)", true);
         sleep(2_000);
         takeScreenshot("tc04_sales_weekly");
 
-        // ── TC_05: Click Monthly button (Sales Report Partner) ────────────────
+        // ── TC_05: Monthly filter (Sales Report Partner) ──────────────────────
         page.clickSalesMonthly();
-        ReportManager.logStep("CeoReport", "TC_05 – Click Monthly Filter (Sales)", true);
+        ReportManager.logStep("CeoReport", "TC_05 – Monthly Filter (Sales)", true);
         sleep(2_000);
         takeScreenshot("tc05_sales_monthly");
 
-        // ── TC_06: Click Yearly button (Sales Report Partner) ─────────────────
+        // ── TC_06: Yearly filter (Sales Report Partner) ───────────────────────
         page.clickSalesYearly();
-        ReportManager.logStep("CeoReport", "TC_06 – Click Yearly Filter (Sales)", true);
+        ReportManager.logStep("CeoReport", "TC_06 – Yearly Filter (Sales)", true);
         sleep(2_000);
         takeScreenshot("tc06_sales_yearly");
 
-        // ── TC_07: Click Date Range button + fill dates (Sales Report Partner) ─
+        // ── TC_07: Date Range filter + fill dates (Sales Report Partner) ──────
         page.clickSalesDateRangeAndFill();
-        ReportManager.logStep("CeoReport", "TC_07 – Click Date Range + Fill Dates (Sales)", true);
+        ReportManager.logStep("CeoReport", "TC_07 – Date Range Filter + Dates (Sales)", true);
         sleep(3_000);
         takeScreenshot("tc07_sales_date_range");
 
@@ -122,7 +146,7 @@ public class CeoReportTest extends BaseTest {
         page.navigateBackFromSalesReport();
         ReportManager.logStep("CeoReport", "TC_08 – Navigate Back from Sales Report Partner", true);
         sleep(3_000);
-        takeScreenshot("tc08_navigate_back_sales");
+        takeScreenshot("tc08_back_from_sales");
 
         // ── TC_09: Click Instructor Report card ───────────────────────────────
         page.clickInstructorReportCard();
@@ -130,83 +154,92 @@ public class CeoReportTest extends BaseTest {
         sleep(3_000);
         takeScreenshot("tc09_instructor_report");
 
-        // ── TC_10: Click Team Member Wise Sale card ───────────────────────────
+        // ── TC_10: Navigate back from Instructor Report ───────────────────────
+        // FIX: Instructor Report is its own sub-page. Must navigate back to the
+        // CEO Report cards page before Team Member Wise Sale card is accessible.
+        page.navigateBackFromInstructorReport();
+        ReportManager.logStep("CeoReport", "TC_10 – Navigate Back from Instructor Report", true);
+        sleep(3_000);
+        takeScreenshot("tc10_back_from_instructor");
+
+        // ── TC_11: Click Team Member Wise Sale card ───────────────────────────
+        // Now on the CEO Report cards page after navigating back from Instructor Report.
         page.clickTeamMemberWiseSaleCard();
-        ReportManager.logStep("CeoReport", "TC_10 – Click Team Member Wise Sale Card", true);
+        ReportManager.logStep("CeoReport", "TC_11 – Click Team Member Wise Sale Card", true);
         sleep(3_000);
-        takeScreenshot("tc10_team_member_wise_sale");
+        takeScreenshot("tc11_team_member_wise_sale");
 
-        // ── TC_11: Click Today button (Team Member Wise Sale) ─────────────────
+        // ── TC_12: Today filter (Team Member Wise Sale) ───────────────────────
         page.clickTeamToday();
-        ReportManager.logStep("CeoReport", "TC_11 – Click Today Filter (Team)", true);
+        ReportManager.logStep("CeoReport", "TC_12 – Today Filter (Team)", true);
         sleep(2_000);
-        takeScreenshot("tc11_team_today");
+        takeScreenshot("tc12_team_today");
 
-        // ── TC_12: Click Weekly button (Team Member Wise Sale) ────────────────
+        // ── TC_13: Weekly filter (Team Member Wise Sale) ──────────────────────
         page.clickTeamWeekly();
-        ReportManager.logStep("CeoReport", "TC_12 – Click Weekly Filter (Team)", true);
+        ReportManager.logStep("CeoReport", "TC_13 – Weekly Filter (Team)", true);
         sleep(2_000);
-        takeScreenshot("tc12_team_weekly");
+        takeScreenshot("tc13_team_weekly");
 
-        // ── TC_13: Click Monthly button (Team Member Wise Sale) ───────────────
+        // ── TC_14: Monthly filter (Team Member Wise Sale) ─────────────────────
         page.clickTeamMonthly();
-        ReportManager.logStep("CeoReport", "TC_13 – Click Monthly Filter (Team)", true);
+        ReportManager.logStep("CeoReport", "TC_14 – Monthly Filter (Team)", true);
         sleep(2_000);
-        takeScreenshot("tc13_team_monthly");
+        takeScreenshot("tc14_team_monthly");
 
-        // ── TC_14: Click Yearly button (Team Member Wise Sale) ────────────────
+        // ── TC_15: Yearly filter (Team Member Wise Sale) ──────────────────────
         page.clickTeamYearly();
-        ReportManager.logStep("CeoReport", "TC_14 – Click Yearly Filter (Team)", true);
+        ReportManager.logStep("CeoReport", "TC_15 – Yearly Filter (Team)", true);
         sleep(2_000);
-        takeScreenshot("tc14_team_yearly");
+        takeScreenshot("tc15_team_yearly");
 
-        // ── TC_15: Click Date Range button + fill dates (Team Member Wise Sale) ─
+        // ── TC_16: Date Range filter + fill dates (Team Member Wise Sale) ─────
         page.clickTeamDateRangeAndFill();
-        ReportManager.logStep("CeoReport", "TC_15 – Click Date Range + Fill Dates (Team)", true);
+        ReportManager.logStep("CeoReport", "TC_16 – Date Range Filter + Dates (Team)", true);
         sleep(3_000);
-        takeScreenshot("tc15_team_date_range");
+        takeScreenshot("tc16_team_date_range");
 
-        // ── TC_16: Navigate back from Team Member Wise Sale ───────────────────
+        // ── TC_17: Navigate back from Team Member Wise Sale ───────────────────
         page.navigateBackFromTeamMemberWiseSale();
-        ReportManager.logStep("CeoReport", "TC_16 – Navigate Back from Team Member Wise Sale", true);
+        ReportManager.logStep("CeoReport", "TC_17 – Navigate Back from Team Member Wise Sale", true);
         sleep(3_000);
-        takeScreenshot("tc16_navigate_back_team");
+        takeScreenshot("tc17_back_from_team");
 
-        // ── TC_17: Click Category Wise Revenue card ───────────────────────────
+        // ── TC_18: Click Category Wise Revenue card ───────────────────────────
         page.clickCategoryWiseRevenueCard();
-        ReportManager.logStep("CeoReport", "TC_17 – Click Category Wise Revenue Card", true);
+        ReportManager.logStep("CeoReport", "TC_18 – Click Category Wise Revenue Card", true);
         sleep(3_000);
-        takeScreenshot("tc17_category_wise_revenue");
+        takeScreenshot("tc18_category_wise_revenue");
 
-        // ── TC_18: Click Today segmented button (Category Wise Revenue) ───────
+        // ── TC_19: Today segmented filter (Category Wise Revenue) ─────────────
         page.clickCategoryToday();
-        ReportManager.logStep("CeoReport", "TC_18 – Click Today Filter (Category)", true);
+        ReportManager.logStep("CeoReport", "TC_19 – Today Filter (Category)", true);
         sleep(2_000);
-        takeScreenshot("tc18_category_today");
+        takeScreenshot("tc19_category_today");
 
-        // ── TC_19: Click Weekly segmented button (Category Wise Revenue) ──────
+        // ── TC_20: Weekly segmented filter (Category Wise Revenue) ────────────
         page.clickCategoryWeekly();
-        ReportManager.logStep("CeoReport", "TC_19 – Click Weekly Filter (Category)", true);
+        ReportManager.logStep("CeoReport", "TC_20 – Weekly Filter (Category)", true);
         sleep(2_000);
-        takeScreenshot("tc19_category_weekly");
+        takeScreenshot("tc20_category_weekly");
 
-        // ── TC_20: Click Monthly segmented button (Category Wise Revenue) ─────
+        // ── TC_21: Monthly segmented filter (Category Wise Revenue) ───────────
         page.clickCategoryMonthly();
-        ReportManager.logStep("CeoReport", "TC_20 – Click Monthly Filter (Category)", true);
+        ReportManager.logStep("CeoReport", "TC_21 – Monthly Filter (Category)", true);
         sleep(2_000);
-        takeScreenshot("tc20_category_monthly");
+        takeScreenshot("tc21_category_monthly");
 
-        // ── TC_21: Click Yearly segmented button (Category Wise Revenue) ──────
+        // ── TC_22: Yearly segmented filter (Category Wise Revenue) ────────────
         page.clickCategoryYearly();
-        ReportManager.logStep("CeoReport", "TC_21 – Click Yearly Filter (Category)", true);
+        ReportManager.logStep("CeoReport", "TC_22 – Yearly Filter (Category)", true);
         sleep(2_000);
-        takeScreenshot("tc21_category_yearly");
+        takeScreenshot("tc22_category_yearly");
 
-        // ── TC_22: Click Date Range segmented button + fill dates (Category) ──
+        // ── TC_23: Date Range segmented filter + fill dates (Category) ────────
         page.clickCategoryDateRangeAndFill();
-        ReportManager.logStep("CeoReport", "TC_22 – Click Date Range + Fill Dates (Category)", true);
+        ReportManager.logStep("CeoReport", "TC_23 – Date Range Filter + Dates (Category)", true);
         sleep(3_000);
-        takeScreenshot("tc22_category_date_range");
+        takeScreenshot("tc23_category_date_range");
 
         System.out.println("[CeoReportTest] ✅ ceoReportFullFlowTest PASSED");
     }
@@ -217,15 +250,8 @@ public class CeoReportTest extends BaseTest {
      * Attempts to locate the CEO Report menu link using multiple XPath strategies.
      *
      * After OTP login, Ant Design sidebar menus render asynchronously and may
-     * initially be in a collapsed/icon-only state, making strict XPaths absent
-     * from the DOM even after the page appears visually ready.
-     *
-     * Strategy order:
-     *  1. Primary full XPath — up to 60 s
-     *  2. href-only           — 10 s  (collapsed or icon-only menu)
-     *  3. sidebar <li> text  — 10 s  (alternate Ant Design structure)
-     *  4. any ancestor text  — 10 s  (any sidebar/menu ancestor)
-     *  5. JS querySelector   — instant (last resort, broadest)
+     * be in a collapsed/icon-only state, making strict XPaths absent from the
+     * DOM even after the page appears visually ready.
      */
     private void waitForCeoMenuVisible() {
         WebDriverWait longWait  = new WebDriverWait(driver, Duration.ofSeconds(60));
