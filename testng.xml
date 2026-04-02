@@ -7,7 +7,8 @@
         <classes>
              <class name="com.dams.tests.login.LoginTest"/> 
              <!-- <class name="com.dams.tests.PaymentEmi.PaymentEmiTest"/>  -->
-            <class name="com.dams.tests.GenerateQrCode.GenerateQrCodeTest"/> 
+            <!-- <class name="com.dams.tests.GenerateQrCode.GenerateQrCodeTest"/>  -->
+             <class name="com.dams.tests.CeoReport.CeoReportTest"/> 
           </classes> 
             
     </test>
