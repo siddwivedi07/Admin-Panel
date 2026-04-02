@@ -122,6 +122,7 @@ public class GenerateQrCodeTest extends BaseTest {
         takeScreenshot("tc07_date_range_filter");
 
         // ── TC_08: Navigate back and click Generate Code card ─────────────────
+        // navigate().back() returns to the QR Code cards page (/qrcode-generate)
         driver.navigate().back();
         sleep(3_000);
         page.clickGenerateCodeCard();
@@ -134,16 +135,27 @@ public class GenerateQrCodeTest extends BaseTest {
         ReportManager.logStep("GenerateQrCode", "TC_09 – Click View Button (first row)", true);
         sleep(2_000);
         takeScreenshot("tc09_view_button");
+
+        // FIX: navigate().back() after View returns to the CARD page, not the table.
+        // We must re-click the Generate Code card to get back to the table.
         driver.navigate().back();
-        sleep(5_000); // wait for table to fully reload before Edit click
+        sleep(3_000);
+        System.out.println("[GenerateQrCodeTest] TC_09 → Navigated back — re-entering Generate Code table for TC_10...");
+        page.clickGenerateCodeCard();
+        sleep(3_000);
 
         // ── TC_10: Click first Edit button (only once) ────────────────────────
         page.clickFirstEditButton();
         ReportManager.logStep("GenerateQrCode", "TC_10 – Click Edit Button (first row)", true);
         sleep(2_000);
         takeScreenshot("tc10_edit_button");
+
+        // FIX: same as TC_09 — navigate().back() returns to card page, re-enter table.
         driver.navigate().back();
-        sleep(5_000); // wait for table to fully reload before Delete click
+        sleep(3_000);
+        System.out.println("[GenerateQrCodeTest] TC_10 → Navigated back — re-entering Generate Code table for TC_11...");
+        page.clickGenerateCodeCard();
+        sleep(3_000);
 
         // ── TC_11: Click first Delete button ─────────────────────────────────
         page.clickFirstDeleteButton();
@@ -163,19 +175,12 @@ public class GenerateQrCodeTest extends BaseTest {
      * menus render asynchronously and may initially be in a collapsed/icon-only
      * state, making the strict primary XPath (href + ant-menu-title-content)
      * absent from the DOM even after the page appears visually ready.
-     *
-     * Strategy order:
-     *  1. Primary full XPath — up to 60 s (same as before, avoids regression)
-     *  2. href-only           — 10 s     (collapsed or icon-only menu)
-     *  3. sidebar <li> text  — 10 s     (alternate Ant Design structure)
-     *  4. any ancestor text  — 10 s     (any sidebar/menu ancestor)
-     *  5. JS querySelector   — instant  (last resort, broadest)
      */
     private void waitForQrMenuVisible() {
         WebDriverWait longWait  = new WebDriverWait(driver, Duration.ofSeconds(60));
         WebDriverWait shortWait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
-        // Strategy 1 — primary locator (original, unchanged timeout)
+        // Strategy 1 — primary locator
         try {
             longWait.until(ExpectedConditions.presenceOfElementLocated(QR_MENU_LINK_PRIMARY));
             System.out.println("[GenerateQrCodeTest] QR menu found via primary locator ✔");
