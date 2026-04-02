@@ -14,18 +14,18 @@ import java.util.List;
 /**
  * Page Object Model for the CEO Report module.
  *
- * Covers:
- *  Step 1  – CEO Report sidebar menu item
- *  Step 2  – Sales Report Partner card
- *  Steps 3–7  – Filter buttons (Today / Weekly / Monthly / Yearly / Date Range)
- *              + Date Range calendar picker
- *  Step 8  – Navigate back from Sales Report Partner
- *  Step 9  – Instructor Report card
- *  Step 10 – Team Member Wise Sale card
- *  Steps 11–15 – Filter buttons + Date Range calendar picker
- *  Step 16 – Navigate back from Team Member Wise Sale
- *  Step 17 – Category Wise Revenue card
- *  Steps 18–22 – Segmented filter buttons + Date Range calendar picker
+ * Corrected step flow:
+ *  Step 1   – CEO Report sidebar menu item
+ *  Step 2   – Sales Report Partner card
+ *  Steps 3–7  – Sales filter buttons (Today/Weekly/Monthly/Yearly/Date Range)
+ *  Step 8   – Navigate back from Sales Report Partner
+ *  Step 9   – Instructor Report card
+ *  Step 10  – Navigate back from Instructor Report   ← NEW
+ *  Step 11  – Team Member Wise Sale card             ← was step 10
+ *  Steps 12–15 – Team filter buttons (Today/Weekly/Monthly/Yearly/Date Range)
+ *  Step 16  – Navigate back from Team Member Wise Sale
+ *  Step 17  – Category Wise Revenue card
+ *  Steps 18–22 – Segmented filter buttons (Today/Weekly/Monthly/Yearly/Date Range)
  */
 public class CeoReportPage {
 
@@ -43,7 +43,7 @@ public class CeoReportPage {
         "//span[contains(@class,'ant-menu-title-content')]" +
         "/a[@href='/ceo-report']"
     );
-    // Fallback – href only
+    // Fallback – href only (collapsed/icon sidebar)
     private final By ceoReportMenuLinkHref = By.xpath(
         "//a[@href='/ceo-report']"
     );
@@ -57,7 +57,7 @@ public class CeoReportPage {
     );
 
     // Steps 3–7 – Filter buttons inside Sales Report Partner
-    // These use ant-btn-primary / ant-btn-default variant buttons
+    // HTML: <button class="ant-btn ..."><span>Today</span></button>
     private final By salesTodayBtn = By.xpath(
         "//button[contains(@class,'ant-btn')][.//span[normalize-space(.)='Today']]"
     );
@@ -74,7 +74,7 @@ public class CeoReportPage {
         "//button[contains(@class,'ant-btn')][.//span[normalize-space(.)='Date Range']]"
     );
 
-    // Step 7 / Step 15 / Step 22 – Ant Design range picker inputs
+    // Step 7 / Step 15 / Step 22 – Ant Design range picker inputs (shared)
     // HTML: <input placeholder="Start date" date-range="start">
     //       <input placeholder="End date"   date-range="end">
     private final By startDateInput = By.xpath(
@@ -94,7 +94,8 @@ public class CeoReportPage {
         "normalize-space(.)='Instructor Report']]"
     );
 
-    // Step 10 – Team Member Wise Sale card
+    // Step 11 – Team Member Wise Sale card  (inside CEO Report cards page,
+    //           reached after navigating back from Instructor Report)
     // HTML: <div class="textData">Team Member Wise Sale</div>
     private final By teamMemberWiseSaleCard = By.xpath(
         "//div[contains(@class,'ant-card-body')]" +
@@ -102,9 +103,8 @@ public class CeoReportPage {
         "normalize-space(.)='Team Member Wise Sale']]"
     );
 
-    // Steps 11–15 – Filter buttons inside Team Member Wise Sale
-    // HTML: <button style="margin-right: 10px;"><span>Today</span></button>
-    // Using normalize-space on span text to be robust to style differences
+    // Steps 12–15 – Filter buttons inside Team Member Wise Sale
+    // HTML: <button style="margin-right: 10px;" class="ant-btn ..."><span>Today</span></button>
     private final By teamTodayBtn = By.xpath(
         "//button[contains(@class,'ant-btn')][.//span[normalize-space(.)='Today']]"
     );
@@ -129,7 +129,7 @@ public class CeoReportPage {
         "normalize-space(.)='Category Wise Revenue']]"
     );
 
-    // Steps 18–22 – Ant Design Segmented filter buttons (different from ant-btn)
+    // Steps 18–22 – Ant Design Segmented filter buttons
     // HTML: <div class="ant-segmented-item-label" title="Today">Today</div>
     private final By segmentedTodayBtn = By.xpath(
         "//div[contains(@class,'ant-segmented-item-label')][@title='Today']"
@@ -316,38 +316,40 @@ public class CeoReportPage {
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    //  STEP 10 – Click Team Member Wise Sale card
+    //  STEP 10 – Navigate back from Instructor Report
+    //  FIX: Instructor Report is its own sub-page. navigate().back() returns
+    //       to the CEO Report cards page where Team Member Wise Sale card lives.
     // ══════════════════════════════════════════════════════════════════════════
 
-    public CeoReportPage clickTeamMemberWiseSaleCard() {
-        System.out.println("[CeoReportPage] Step 10 → Clicking 'Team Member Wise Sale' card...");
-        WebElement element = wait.until(ExpectedConditions.elementToBeClickable(teamMemberWiseSaleCard));
-        scrollAndClick(element);
-        sleep(2000);
+    public CeoReportPage navigateBackFromInstructorReport() {
+        System.out.println("[CeoReportPage] Step 10 → Navigating back from Instructor Report...");
+        driver.navigate().back();
+        sleep(3000);
         System.out.println("[CeoReportPage] Step 10 → PASSED ✔");
         return this;
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    //  STEP 11 – Click Today button (Team Member Wise Sale)
+    //  STEP 11 – Click Team Member Wise Sale card
+    //  (now on CEO Report cards page after navigating back from Instructor Report)
     // ══════════════════════════════════════════════════════════════════════════
 
-    public CeoReportPage clickTeamToday() {
-        System.out.println("[CeoReportPage] Step 11 → Clicking 'Today' button...");
-        WebElement element = wait.until(ExpectedConditions.elementToBeClickable(teamTodayBtn));
+    public CeoReportPage clickTeamMemberWiseSaleCard() {
+        System.out.println("[CeoReportPage] Step 11 → Clicking 'Team Member Wise Sale' card...");
+        WebElement element = wait.until(ExpectedConditions.elementToBeClickable(teamMemberWiseSaleCard));
         scrollAndClick(element);
-        sleep(1500);
+        sleep(2000);
         System.out.println("[CeoReportPage] Step 11 → PASSED ✔");
         return this;
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    //  STEP 12 – Click Weekly button (Team Member Wise Sale)
+    //  STEP 12 – Click Today button (Team Member Wise Sale)
     // ══════════════════════════════════════════════════════════════════════════
 
-    public CeoReportPage clickTeamWeekly() {
-        System.out.println("[CeoReportPage] Step 12 → Clicking 'Weekly' button...");
-        WebElement element = wait.until(ExpectedConditions.elementToBeClickable(teamWeeklyBtn));
+    public CeoReportPage clickTeamToday() {
+        System.out.println("[CeoReportPage] Step 12 → Clicking 'Today' button...");
+        WebElement element = wait.until(ExpectedConditions.elementToBeClickable(teamTodayBtn));
         scrollAndClick(element);
         sleep(1500);
         System.out.println("[CeoReportPage] Step 12 → PASSED ✔");
@@ -355,12 +357,12 @@ public class CeoReportPage {
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    //  STEP 13 – Click Monthly button (Team Member Wise Sale)
+    //  STEP 13 – Click Weekly button (Team Member Wise Sale)
     // ══════════════════════════════════════════════════════════════════════════
 
-    public CeoReportPage clickTeamMonthly() {
-        System.out.println("[CeoReportPage] Step 13 → Clicking 'Monthly' button...");
-        WebElement element = wait.until(ExpectedConditions.elementToBeClickable(teamMonthlyBtn));
+    public CeoReportPage clickTeamWeekly() {
+        System.out.println("[CeoReportPage] Step 13 → Clicking 'Weekly' button...");
+        WebElement element = wait.until(ExpectedConditions.elementToBeClickable(teamWeeklyBtn));
         scrollAndClick(element);
         sleep(1500);
         System.out.println("[CeoReportPage] Step 13 → PASSED ✔");
@@ -368,12 +370,12 @@ public class CeoReportPage {
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    //  STEP 14 – Click Yearly button (Team Member Wise Sale)
+    //  STEP 14 – Click Monthly button (Team Member Wise Sale)
     // ══════════════════════════════════════════════════════════════════════════
 
-    public CeoReportPage clickTeamYearly() {
-        System.out.println("[CeoReportPage] Step 14 → Clicking 'Yearly' button...");
-        WebElement element = wait.until(ExpectedConditions.elementToBeClickable(teamYearlyBtn));
+    public CeoReportPage clickTeamMonthly() {
+        System.out.println("[CeoReportPage] Step 14 → Clicking 'Monthly' button...");
+        WebElement element = wait.until(ExpectedConditions.elementToBeClickable(teamMonthlyBtn));
         scrollAndClick(element);
         sleep(1500);
         System.out.println("[CeoReportPage] Step 14 → PASSED ✔");
@@ -381,65 +383,65 @@ public class CeoReportPage {
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    //  STEP 15 – Click Date Range button + fill calendar picker
-    //            (Team Member Wise Sale)
+    //  STEP 15 – Click Yearly button (Team Member Wise Sale)
     // ══════════════════════════════════════════════════════════════════════════
 
-    public CeoReportPage clickTeamDateRangeAndFill() {
-        System.out.println("[CeoReportPage] Step 15 → Clicking 'Date Range' button...");
-        WebElement btn = wait.until(ExpectedConditions.elementToBeClickable(teamDateRangeBtn));
-        scrollAndClick(btn);
-        sleep(2000);
-        fillDateRangePicker(START_DATE, END_DATE);
+    public CeoReportPage clickTeamYearly() {
+        System.out.println("[CeoReportPage] Step 15 → Clicking 'Yearly' button...");
+        WebElement element = wait.until(ExpectedConditions.elementToBeClickable(teamYearlyBtn));
+        scrollAndClick(element);
+        sleep(1500);
         System.out.println("[CeoReportPage] Step 15 → PASSED ✔");
         return this;
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    //  STEP 16 – Navigate back from Team Member Wise Sale
+    //  STEP 16 – Click Date Range button + fill calendar picker
+    //            (Team Member Wise Sale)
     // ══════════════════════════════════════════════════════════════════════════
 
-    public CeoReportPage navigateBackFromTeamMemberWiseSale() {
-        System.out.println("[CeoReportPage] Step 16 → Navigating back from Team Member Wise Sale...");
-        driver.navigate().back();
-        sleep(3000);
+    public CeoReportPage clickTeamDateRangeAndFill() {
+        System.out.println("[CeoReportPage] Step 16 → Clicking 'Date Range' button...");
+        WebElement btn = wait.until(ExpectedConditions.elementToBeClickable(teamDateRangeBtn));
+        scrollAndClick(btn);
+        sleep(2000);
+        fillDateRangePicker(START_DATE, END_DATE);
         System.out.println("[CeoReportPage] Step 16 → PASSED ✔");
         return this;
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    //  STEP 17 – Click Category Wise Revenue card
+    //  STEP 17 – Navigate back from Team Member Wise Sale
     // ══════════════════════════════════════════════════════════════════════════
 
-    public CeoReportPage clickCategoryWiseRevenueCard() {
-        System.out.println("[CeoReportPage] Step 17 → Clicking 'Category Wise Revenue' card...");
-        WebElement element = wait.until(ExpectedConditions.elementToBeClickable(categoryWiseRevenueCard));
-        scrollAndClick(element);
-        sleep(2000);
+    public CeoReportPage navigateBackFromTeamMemberWiseSale() {
+        System.out.println("[CeoReportPage] Step 17 → Navigating back from Team Member Wise Sale...");
+        driver.navigate().back();
+        sleep(3000);
         System.out.println("[CeoReportPage] Step 17 → PASSED ✔");
         return this;
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    //  STEP 18 – Click Today segmented button (Category Wise Revenue)
+    //  STEP 18 – Click Category Wise Revenue card
     // ══════════════════════════════════════════════════════════════════════════
 
-    public CeoReportPage clickCategoryToday() {
-        System.out.println("[CeoReportPage] Step 18 → Clicking segmented 'Today' button...");
-        WebElement element = wait.until(ExpectedConditions.elementToBeClickable(segmentedTodayBtn));
+    public CeoReportPage clickCategoryWiseRevenueCard() {
+        System.out.println("[CeoReportPage] Step 18 → Clicking 'Category Wise Revenue' card...");
+        WebElement element = wait.until(ExpectedConditions.elementToBeClickable(categoryWiseRevenueCard));
         scrollAndClick(element);
-        sleep(1500);
+        sleep(2000);
         System.out.println("[CeoReportPage] Step 18 → PASSED ✔");
         return this;
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    //  STEP 19 – Click Weekly segmented button (Category Wise Revenue)
+    //  STEP 19 – Click Today segmented button (Category Wise Revenue)
     // ══════════════════════════════════════════════════════════════════════════
 
-    public CeoReportPage clickCategoryWeekly() {
-        System.out.println("[CeoReportPage] Step 19 → Clicking segmented 'Weekly' button...");
-        WebElement element = wait.until(ExpectedConditions.elementToBeClickable(segmentedWeeklyBtn));
+    public CeoReportPage clickCategoryToday() {
+        System.out.println("[CeoReportPage] Step 19 → Clicking segmented 'Today' button...");
+        WebElement element = wait.until(ExpectedConditions.elementToBeClickable(segmentedTodayBtn));
         scrollAndClick(element);
         sleep(1500);
         System.out.println("[CeoReportPage] Step 19 → PASSED ✔");
@@ -447,12 +449,12 @@ public class CeoReportPage {
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    //  STEP 20 – Click Monthly segmented button (Category Wise Revenue)
+    //  STEP 20 – Click Weekly segmented button (Category Wise Revenue)
     // ══════════════════════════════════════════════════════════════════════════
 
-    public CeoReportPage clickCategoryMonthly() {
-        System.out.println("[CeoReportPage] Step 20 → Clicking segmented 'Monthly' button...");
-        WebElement element = wait.until(ExpectedConditions.elementToBeClickable(segmentedMonthlyBtn));
+    public CeoReportPage clickCategoryWeekly() {
+        System.out.println("[CeoReportPage] Step 20 → Clicking segmented 'Weekly' button...");
+        WebElement element = wait.until(ExpectedConditions.elementToBeClickable(segmentedWeeklyBtn));
         scrollAndClick(element);
         sleep(1500);
         System.out.println("[CeoReportPage] Step 20 → PASSED ✔");
@@ -460,12 +462,12 @@ public class CeoReportPage {
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    //  STEP 21 – Click Yearly segmented button (Category Wise Revenue)
+    //  STEP 21 – Click Monthly segmented button (Category Wise Revenue)
     // ══════════════════════════════════════════════════════════════════════════
 
-    public CeoReportPage clickCategoryYearly() {
-        System.out.println("[CeoReportPage] Step 21 → Clicking segmented 'Yearly' button...");
-        WebElement element = wait.until(ExpectedConditions.elementToBeClickable(segmentedYearlyBtn));
+    public CeoReportPage clickCategoryMonthly() {
+        System.out.println("[CeoReportPage] Step 21 → Clicking segmented 'Monthly' button...");
+        WebElement element = wait.until(ExpectedConditions.elementToBeClickable(segmentedMonthlyBtn));
         scrollAndClick(element);
         sleep(1500);
         System.out.println("[CeoReportPage] Step 21 → PASSED ✔");
@@ -473,17 +475,30 @@ public class CeoReportPage {
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    //  STEP 22 – Click Date Range segmented button + fill calendar picker
+    //  STEP 22 – Click Yearly segmented button (Category Wise Revenue)
+    // ══════════════════════════════════════════════════════════════════════════
+
+    public CeoReportPage clickCategoryYearly() {
+        System.out.println("[CeoReportPage] Step 22 → Clicking segmented 'Yearly' button...");
+        WebElement element = wait.until(ExpectedConditions.elementToBeClickable(segmentedYearlyBtn));
+        scrollAndClick(element);
+        sleep(1500);
+        System.out.println("[CeoReportPage] Step 22 → PASSED ✔");
+        return this;
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    //  STEP 23 – Click Date Range segmented button + fill calendar picker
     //            (Category Wise Revenue)
     // ══════════════════════════════════════════════════════════════════════════
 
     public CeoReportPage clickCategoryDateRangeAndFill() {
-        System.out.println("[CeoReportPage] Step 22 → Clicking segmented 'Date Range' button...");
+        System.out.println("[CeoReportPage] Step 23 → Clicking segmented 'Date Range' button...");
         WebElement btn = wait.until(ExpectedConditions.elementToBeClickable(segmentedDateRangeBtn));
         scrollAndClick(btn);
         sleep(2000);
         fillDateRangePicker(START_DATE, END_DATE);
-        System.out.println("[CeoReportPage] Step 22 → PASSED ✔");
+        System.out.println("[CeoReportPage] Step 23 → PASSED ✔");
         return this;
     }
 
@@ -491,8 +506,7 @@ public class CeoReportPage {
 
     /**
      * Fills the Ant Design range picker that appears after clicking Date Range.
-     * Works for all three sections (Sales, Team Member, Category Wise Revenue)
-     * since they all use the same ant-picker-range structure:
+     * Shared by steps 7, 16, 23 — all three use the same ant-picker-range HTML:
      *   <input placeholder="Start date" date-range="start">
      *   <input placeholder="End date"   date-range="end">
      */
