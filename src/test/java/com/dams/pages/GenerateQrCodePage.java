@@ -9,6 +9,7 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
+import java.util.List;
 
 /**
  * Page Object Model for the Generate QR Code module.
@@ -27,14 +28,25 @@ public class GenerateQrCodePage {
 
     // ── Locators ──────────────────────────────────────────────────────────────
 
-    // Step 1 – Generate QR Code sidebar/menu link
-    // The <a> tag contains an <img> + <span class="ant-menu-title-content">,
-    // so normalize-space(.) on the <a> includes icon text. We match on the
-    // <span> child text inside the <a href='/qrcode-generate'> instead.
+    // Step 1 – Generate QR Code sidebar/menu link (primary)
+    // Matches <a href='/qrcode-generate'> that contains a child span with the
+    // 'ant-menu-title-content' class and text 'Generate QR Code'.
     private final By generateQrCodeMenuLink = By.xpath(
         "//a[@href='/qrcode-generate']" +
         "[.//*[contains(@class,'ant-menu-title-content') and " +
         "normalize-space(.)='Generate QR Code']]"
+    );
+
+    // Step 1 – Fallback: match by href alone (collapsed/icon-only sidebar)
+    private final By generateQrCodeMenuLinkHref = By.xpath(
+        "//a[@href='/qrcode-generate']"
+    );
+
+    // Step 1 – Fallback: sidebar trigger button to expand a collapsed menu
+    private final By sidebarCollapseToggle = By.xpath(
+        "//button[contains(@class,'ant-layout-sider-trigger') " +
+        "or contains(@class,'ant-btn') and .//*[local-name()='svg']]" +
+        "[ancestor::*[contains(@class,'ant-layout-sider')]]"
     );
 
     // Step 2 – Partner QR Code Report card
@@ -98,13 +110,84 @@ public class GenerateQrCodePage {
 
     // ── Step 1: Click Generate QR Code menu link ──────────────────────────────
 
+    /**
+     * Clicks the 'Generate QR Code' sidebar menu entry.
+     *
+     * Fix: after login the Ant Design sidebar can be in a collapsed (icon-only)
+     * state, where the primary XPath fails because the ant-menu-title-content
+     * span is not rendered.  We try:
+     *   1. Primary locator (full href + content match)
+     *   2. href-only locator (collapsed state)
+     *   3. Expand the sidebar if it is collapsed, then retry
+     */
     public GenerateQrCodePage clickGenerateQrCodeMenu() {
         System.out.println("[GenerateQrCodePage] Step 1 → Clicking 'Generate QR Code' menu...");
-        WebElement element = wait.until(ExpectedConditions.elementToBeClickable(generateQrCodeMenuLink));
+
+        WebElement element = findQrMenuElement();
         scrollAndClick(element);
         sleep(2000);
+
         System.out.println("[GenerateQrCodePage] Step 1 → PASSED ✔");
         return this;
+    }
+
+    /**
+     * Resolves the QR Code menu WebElement using a two-pass approach:
+     *   Pass 1: primary locator (full XPath with content span).
+     *   Pass 2: href-only locator (handles collapsed sidebar).
+     *   Pass 3: expand sidebar via toggle button, then retry both locators.
+     */
+    private WebElement findQrMenuElement() {
+        // Pass 1 — primary
+        try {
+            return wait.until(ExpectedConditions.elementToBeClickable(generateQrCodeMenuLink));
+        } catch (Exception ignored) {
+            System.out.println("[GenerateQrCodePage] Primary menu locator not clickable — trying href-only...");
+        }
+
+        // Pass 2 — href-only
+        try {
+            return wait.until(ExpectedConditions.elementToBeClickable(generateQrCodeMenuLinkHref));
+        } catch (Exception ignored) {
+            System.out.println("[GenerateQrCodePage] href-only locator not clickable — trying to expand sidebar...");
+        }
+
+        // Pass 3 — try to expand collapsed sidebar, then retry
+        tryExpandSidebar();
+        sleep(1500);
+
+        try {
+            return wait.until(ExpectedConditions.elementToBeClickable(generateQrCodeMenuLink));
+        } catch (Exception ignored) {
+            // last chance — href-only after expand
+        }
+
+        return wait.until(ExpectedConditions.elementToBeClickable(generateQrCodeMenuLinkHref));
+    }
+
+    /**
+     * If the sidebar is collapsed, clicks the collapse/expand toggle button.
+     * Safe to call even if the sidebar is already expanded (toggle not found → no-op).
+     */
+    private void tryExpandSidebar() {
+        try {
+            // Ant Design sider trigger is a <span role="img"> inside the sider div
+            By siderTrigger = By.cssSelector(
+                ".ant-layout-sider-trigger, " +
+                "[class*='sider'] button, " +
+                ".ant-layout-sider .anticon-menu-fold, " +
+                ".ant-layout-sider .anticon-menu-unfold"
+            );
+            List<WebElement> triggers = driver.findElements(siderTrigger);
+            if (!triggers.isEmpty()) {
+                triggers.get(0).click();
+                System.out.println("[GenerateQrCodePage] Sidebar expand toggle clicked.");
+            } else {
+                System.out.println("[GenerateQrCodePage] No sidebar toggle found — sidebar may already be expanded.");
+            }
+        } catch (Exception e) {
+            System.out.println("[GenerateQrCodePage] Could not click sidebar toggle: " + e.getMessage());
+        }
     }
 
     // ── Step 2: Click Partner QR Code Report card ─────────────────────────────
