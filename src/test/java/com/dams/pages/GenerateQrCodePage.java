@@ -91,14 +91,17 @@ public class GenerateQrCodePage {
     );
 
     // Steps 9–11 – Table action buttons (first row only)
+    // HTML: <button class="ant-btn ... ant-btn-link ..."><span>View</span></button>
     private final By firstViewBtn = By.xpath(
-        "(//button[contains(@class,'ant-btn')][.//span[normalize-space(.)='View']])[1]"
+        "(//button[contains(@class,'ant-btn-link')][.//span[normalize-space(.)='View']])[1]"
     );
+    // HTML: <button class="ant-btn ... ant-btn-link ant-btn-color-link ant-btn-variant-link"><span>Edit</span></button>
     private final By firstEditBtn = By.xpath(
-        "(//button[contains(@class,'ant-btn')][.//span[normalize-space(.)='Edit']])[1]"
+        "(//button[contains(@class,'ant-btn-link')][.//span[normalize-space(.)='Edit']])[1]"
     );
+    // HTML: <button class="ant-btn ... ant-btn-link ant-btn-dangerous ..."><span>Delete</span></button>
     private final By firstDeleteBtn = By.xpath(
-        "(//button[contains(@class,'ant-btn-dangerous')][.//span[normalize-space(.)='Delete']])[1]"
+        "(//button[contains(@class,'ant-btn-link') and contains(@class,'ant-btn-dangerous')][.//span[normalize-space(.)='Delete']])[1]"
     );
 
     // ── Constructor ───────────────────────────────────────────────────────────
@@ -298,10 +301,19 @@ public class GenerateQrCodePage {
 
     // ── Step 10: Click first Edit button in the table ────────────────────────
 
+    /**
+     * Waits for the table to fully reload after any navigation, then clicks
+     * the first Edit button. Uses JS click as fallback for ant-btn-link buttons
+     * which can be intercepted by overlapping elements after page transitions.
+     */
     public GenerateQrCodePage clickFirstEditButton() {
+        System.out.println("[GenerateQrCodePage] Step 10 → Waiting for table to reload...");
+        // Wait for at least one Edit button to be present in the DOM first
+        wait.until(ExpectedConditions.presenceOfElementLocated(firstEditBtn));
+        sleep(1000); // allow any loading spinner to clear
         System.out.println("[GenerateQrCodePage] Step 10 → Clicking first 'Edit' button...");
         WebElement element = wait.until(ExpectedConditions.elementToBeClickable(firstEditBtn));
-        scrollAndClick(element);
+        scrollAndJsClick(element);
         sleep(2000);
         System.out.println("[GenerateQrCodePage] Step 10 → PASSED ✔");
         return this;
@@ -309,10 +321,17 @@ public class GenerateQrCodePage {
 
     // ── Step 11: Click first Delete button in the table ──────────────────────
 
+    /**
+     * Waits for the table to be present, then clicks the first Delete button.
+     * Uses JS click for reliability with ant-btn-link ant-btn-dangerous buttons.
+     */
     public GenerateQrCodePage clickFirstDeleteButton() {
+        System.out.println("[GenerateQrCodePage] Step 11 → Waiting for table to reload...");
+        wait.until(ExpectedConditions.presenceOfElementLocated(firstDeleteBtn));
+        sleep(1000);
         System.out.println("[GenerateQrCodePage] Step 11 → Clicking first 'Delete' button...");
         WebElement element = wait.until(ExpectedConditions.elementToBeClickable(firstDeleteBtn));
-        scrollAndClick(element);
+        scrollAndJsClick(element);
         sleep(1500);
         System.out.println("[GenerateQrCodePage] Step 11 → PASSED ✔");
         return this;
@@ -325,6 +344,18 @@ public class GenerateQrCodePage {
             "arguments[0].scrollIntoView({block:'center'});", element
         );
         element.click();
+    }
+
+    /**
+     * Scrolls to the element and clicks it via JavaScript.
+     * Use for ant-btn-link buttons that can be stale or intercepted
+     * after a page navigation / table reload.
+     */
+    private void scrollAndJsClick(WebElement element) {
+        ((JavascriptExecutor) driver).executeScript(
+            "arguments[0].scrollIntoView({block:'center'});", element
+        );
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", element);
     }
 
     private void clearAndType(WebElement input, String value) {
