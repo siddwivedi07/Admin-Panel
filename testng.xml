@@ -9,7 +9,8 @@
              <!-- <class name="com.dams.tests.PaymentEmi.PaymentEmiTest"/>  -->
             <!-- <class name="com.dams.tests.GenerateQrCode.GenerateQrCodeTest"/>  -->
              <!-- <class name="com.dams.tests.CeoReport.CeoReportTest"/>  -->
-             <class name="com.dams.tests.Reward.RewardTest"/> 
+             <!-- <class name="com.dams.tests.Reward.RewardTest"/>  -->
+            <class name="com.dams.tests.PrintQbank.PrintQbankTest"/> 
           </classes> 
             
     </test>
