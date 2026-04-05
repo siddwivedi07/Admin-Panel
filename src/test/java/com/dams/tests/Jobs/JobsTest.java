@@ -1,7 +1,7 @@
 package com.dams.tests.Jobs;
 
 import com.dams.base.BaseTest;
-import com.dams.pages.JobPage;
+import com.dams.pages.JobsPage;
 import com.dams.pages.LoginPage;
 import com.dams.report.ReportManager;
 import org.openqa.selenium.By;
@@ -87,7 +87,7 @@ public class JobsTest extends BaseTest {
         waitForJobsMenuVisible();
         System.out.println("[JobsTest] Step 0: Dashboard ready ✔");
 
-        JobPage page = new JobPage(driver);
+        JobsPage page = new JobsPage(driver);
 
         // ── TC_01: Click Jobs menu link ───────────────────────────────────────
         page.clickJobsMenu();
