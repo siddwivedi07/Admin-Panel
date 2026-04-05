@@ -31,7 +31,7 @@ import java.util.List;
  *             • Salary Range      → "30000"
  *  Step 8 – Post Job (submit) button
  */
-public class JobPage {
+public class JobsPage {
 
     private final WebDriver     driver;
     private final WebDriverWait wait;
@@ -144,7 +144,7 @@ public class JobPage {
 
     // ── Constructor ───────────────────────────────────────────────────────────
 
-    public JobPage(WebDriver driver) {
+    public JobsPage(WebDriver driver) {
         this.driver = driver;
         this.wait   = new WebDriverWait(driver, Duration.ofSeconds(30));
     }
@@ -157,12 +157,12 @@ public class JobPage {
      * Clicks the 'Jobs' sidebar menu entry.
      * Three-pass strategy: primary → href-only → expand sidebar + retry.
      */
-    public JobPage clickJobsMenu() {
-        System.out.println("[JobPage] Step 1 → Clicking 'Jobs' menu...");
+    public JobsPage clickJobsMenu() {
+        System.out.println("[JobsPage] Step 1 → Clicking 'Jobs' menu...");
         WebElement element = findJobsMenuElement();
         scrollAndClick(element);
         sleep(2000);
-        System.out.println("[JobPage] Step 1 → PASSED ✔");
+        System.out.println("[JobsPage] Step 1 → PASSED ✔");
         return this;
     }
 
@@ -171,13 +171,13 @@ public class JobPage {
         try {
             return wait.until(ExpectedConditions.elementToBeClickable(jobsMenuLink));
         } catch (Exception ignored) {
-            System.out.println("[JobPage] Primary menu locator failed — trying href-only...");
+            System.out.println("[JobsPage] Primary menu locator failed — trying href-only...");
         }
         // Pass 2 — href-only (collapsed sidebar)
         try {
             return wait.until(ExpectedConditions.elementToBeClickable(jobsMenuLinkHref));
         } catch (Exception ignored) {
-            System.out.println("[JobPage] href-only locator failed — trying sidebar expand...");
+            System.out.println("[JobsPage] href-only locator failed — trying sidebar expand...");
         }
         // Pass 3 — expand sidebar then retry
         tryExpandSidebar();
@@ -200,12 +200,12 @@ public class JobPage {
             List<WebElement> triggers = driver.findElements(siderTrigger);
             if (!triggers.isEmpty()) {
                 triggers.get(0).click();
-                System.out.println("[JobPage] Sidebar expand toggle clicked.");
+                System.out.println("[JobsPage] Sidebar expand toggle clicked.");
             } else {
-                System.out.println("[JobPage] No sidebar toggle — already expanded.");
+                System.out.println("[JobsPage] No sidebar toggle — already expanded.");
             }
         } catch (Exception e) {
-            System.out.println("[JobPage] Could not expand sidebar: " + e.getMessage());
+            System.out.println("[JobsPage] Could not expand sidebar: " + e.getMessage());
         }
     }
 
@@ -213,13 +213,13 @@ public class JobPage {
     //  STEP 2 – Click Applied Job card
     // ══════════════════════════════════════════════════════════════════════════
 
-    public JobPage clickAppliedJobCard() {
-        System.out.println("[JobPage] Step 2 → Clicking 'Applied Job' card...");
+    public JobsPage clickAppliedJobCard() {
+        System.out.println("[JobsPage] Step 2 → Clicking 'Applied Job' card...");
         WebElement element = wait.until(
             ExpectedConditions.elementToBeClickable(appliedJobCard));
         scrollAndClick(element);
         sleep(2000);
-        System.out.println("[JobPage] Step 2 → PASSED ✔");
+        System.out.println("[JobsPage] Step 2 → PASSED ✔");
         return this;
     }
 
@@ -232,11 +232,11 @@ public class JobPage {
      * ant-input-affix-wrapper, clears any existing value, types "Ravi"
      * and waits for the table to reload.
      *
-     * Screenshot is taken in JobTest after this returns so it captures
+     * Screenshot is taken in JobsTest after this returns so it captures
      * the fully loaded results.
      */
-    public JobPage searchRaviInAppliedJob() {
-        System.out.println("[JobPage] Step 3 → Typing 'Ravi' in Applied Job search box...");
+    public JobsPage searchRaviInAppliedJob() {
+        System.out.println("[JobsPage] Step 3 → Typing 'Ravi' in Applied Job search box...");
         WebElement input = wait.until(
             ExpectedConditions.elementToBeClickable(appliedJobSearchInput));
         scrollAndClick(input);
@@ -244,8 +244,8 @@ public class JobPage {
         input.sendKeys(Keys.DELETE);
         input.clear();
         input.sendKeys("Ravi");
-        sleep(2000); // wait for debounced search / table reload
-        System.out.println("[JobPage] Step 3 → 'Ravi' entered ✔");
+        sleep(2000);
+        System.out.println("[JobsPage] Step 3 → 'Ravi' entered ✔");
         return this;
     }
 
@@ -253,11 +253,11 @@ public class JobPage {
     //  STEP 4 – Navigate back from Applied Job
     // ══════════════════════════════════════════════════════════════════════════
 
-    public JobPage navigateBackFromAppliedJob() {
-        System.out.println("[JobPage] Step 4 → Navigating back from Applied Job...");
+    public JobsPage navigateBackFromAppliedJob() {
+        System.out.println("[JobsPage] Step 4 → Navigating back from Applied Job...");
         driver.navigate().back();
         sleep(3000);
-        System.out.println("[JobPage] Step 4 → PASSED ✔");
+        System.out.println("[JobsPage] Step 4 → PASSED ✔");
         return this;
     }
 
@@ -265,13 +265,13 @@ public class JobPage {
     //  STEP 5 – Click Job Post card
     // ══════════════════════════════════════════════════════════════════════════
 
-    public JobPage clickJobPostCard() {
-        System.out.println("[JobPage] Step 5 → Clicking 'Job Post' card...");
+    public JobsPage clickJobPostCard() {
+        System.out.println("[JobsPage] Step 5 → Clicking 'Job Post' card...");
         WebElement element = wait.until(
             ExpectedConditions.elementToBeClickable(jobPostCard));
         scrollAndClick(element);
         sleep(2000);
-        System.out.println("[JobPage] Step 5 → PASSED ✔");
+        System.out.println("[JobsPage] Step 5 → PASSED ✔");
         return this;
     }
 
@@ -283,8 +283,8 @@ public class JobPage {
      * Locates the job search input (placeholder="Search job"), clears it,
      * types "Dentist" and waits for results.
      */
-    public JobPage searchDentistInJobPost() {
-        System.out.println("[JobPage] Step 6 → Typing 'Dentist' in Job Post search box...");
+    public JobsPage searchDentistInJobPost() {
+        System.out.println("[JobsPage] Step 6 → Typing 'Dentist' in Job Post search box...");
         WebElement input = wait.until(
             ExpectedConditions.elementToBeClickable(jobPostSearchInput));
         scrollAndClick(input);
@@ -292,8 +292,8 @@ public class JobPage {
         input.sendKeys(Keys.DELETE);
         input.clear();
         input.sendKeys("Dentist");
-        sleep(2000); // wait for debounced search / table reload
-        System.out.println("[JobPage] Step 6 → 'Dentist' entered ✔");
+        sleep(2000);
+        System.out.println("[JobsPage] Step 6 → 'Dentist' entered ✔");
         return this;
     }
 
@@ -311,8 +311,8 @@ public class JobPage {
      *   • Salary Type       → "Monthly"         (Ant Select, id=salary_type)
      *   • Salary Range      → "30000"           (plain input, id=salary_range)
      */
-    public JobPage clickAddJobAndFillForm() {
-        System.out.println("[JobPage] Step 7 → Clicking 'Add Job' button...");
+    public JobsPage clickAddJobAndFillForm() {
+        System.out.println("[JobsPage] Step 7 → Clicking 'Add Job' button...");
         WebElement addBtn = wait.until(
             ExpectedConditions.elementToBeClickable(addJobButton));
         scrollAndJsClick(addBtn);
@@ -339,7 +339,7 @@ public class JobPage {
         // Salary Range
         fillInput(salaryRangeInput, "30000");
 
-        System.out.println("[JobPage] Step 7 → Form filled ✔");
+        System.out.println("[JobsPage] Step 7 → Form filled ✔");
         return this;
     }
 
@@ -351,14 +351,14 @@ public class JobPage {
      * Clicks the 'Post Job' submit button.
      * Uses JS click to bypass any overlay after the form is filled.
      */
-    public JobPage clickPostJobButton() {
-        System.out.println("[JobPage] Step 8 → Clicking 'Post Job' button...");
+    public JobsPage clickPostJobButton() {
+        System.out.println("[JobsPage] Step 8 → Clicking 'Post Job' button...");
         wait.until(ExpectedConditions.presenceOfElementLocated(postJobButton));
         WebElement element = wait.until(
             ExpectedConditions.elementToBeClickable(postJobButton));
         scrollAndJsClick(element);
         sleep(2000);
-        System.out.println("[JobPage] Step 8 → PASSED ✔");
+        System.out.println("[JobsPage] Step 8 → PASSED ✔");
         return this;
     }
 
@@ -374,19 +374,17 @@ public class JobPage {
      *   2. Wait for div.ant-select-dropdown to appear
      *   3. Click the matching div.ant-select-item-option
      *
-     * @param selectorLocator  By locator that targets the ant-select-selector div
+     * @param selectorLocator  By locator targeting the ant-select-selector div
      * @param optionText       exact visible text of the option to select
      */
     private void selectAntDropdown(By selectorLocator, String optionText) {
-        System.out.println("[JobPage] → Opening dropdown for option: " + optionText);
+        System.out.println("[JobsPage] → Opening dropdown for option: " + optionText);
 
-        // Click the visible selector area to open the list
         WebElement selector = wait.until(
             ExpectedConditions.elementToBeClickable(selectorLocator));
         scrollAndClick(selector);
         sleep(800);
 
-        // Build locator for the specific option
         By optionLocator = By.xpath(
             "//div[contains(@class,'ant-select-dropdown')" +
             " and not(contains(@class,'ant-select-dropdown-hidden'))]" +
@@ -400,19 +398,18 @@ public class JobPage {
             ExpectedConditions.elementToBeClickable(optionLocator));
         scrollAndClick(option);
         sleep(600);
-        System.out.println("[JobPage] → Selected: " + optionText + " ✔");
+        System.out.println("[JobsPage] → Selected: " + optionText + " ✔");
     }
 
     /**
      * Clears a plain text input field and types the given value.
-     * Uses JS to reset value first, then sends keys for proper React/Ant state.
+     * Uses JS to reset value first, then sends keys for React/Ant state update.
      */
     private void fillInput(By inputLocator, String value) {
-        System.out.println("[JobPage] → Filling input with: " + value);
+        System.out.println("[JobsPage] → Filling input with: " + value);
         WebElement input = wait.until(
             ExpectedConditions.elementToBeClickable(inputLocator));
         scrollAndClick(input);
-        // JS clear + sendKeys ensures React controlled-input state is updated
         ((JavascriptExecutor) driver).executeScript(
             "arguments[0].value = '';", input);
         input.sendKeys(Keys.CONTROL + "a");
@@ -420,7 +417,7 @@ public class JobPage {
         input.clear();
         input.sendKeys(value);
         sleep(400);
-        System.out.println("[JobPage] → Entered: " + value + " ✔");
+        System.out.println("[JobsPage] → Entered: " + value + " ✔");
     }
 
     private void scrollAndClick(WebElement element) {
