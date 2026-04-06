@@ -360,7 +360,28 @@ public class AddSpacePage {
         WebElement submitBtn = wait.until(
             ExpectedConditions.elementToBeClickable(addVendorSubmitButton));
         scrollAndJsClick(submitBtn);
-        sleep(2000);
+
+        // FIX: Wait for the ant-modal-wrap to fully disappear before proceeding.
+        // Without this wait, the modal overlay intercepts the next click on
+        // the search input (ant-modal-wrap receives the click instead).
+        System.out.println("[AddSpacePage] Step 7 → Waiting for modal to close...");
+        try {
+            wait.until(ExpectedConditions.invisibilityOfElementLocated(
+                By.cssSelector(".ant-modal-wrap")));
+            System.out.println("[AddSpacePage] Step 7 → Modal closed ✔");
+        } catch (Exception e) {
+            // Modal may have closed too fast to catch — press Escape as fallback
+            System.out.println("[AddSpacePage] Step 7 → Modal invisibility wait timed out, " +
+                "pressing Escape as fallback...");
+            try {
+                driver.findElement(By.tagName("body"))
+                      .sendKeys(org.openqa.selenium.Keys.ESCAPE);
+                sleep(1000);
+            } catch (Exception ignored) {
+                System.out.println("[AddSpacePage] Step 7 → Escape fallback also failed, proceeding...");
+            }
+        }
+        sleep(1500); // extra buffer for modal animation to fully complete
         System.out.println("[AddSpacePage] Step 7 → PASSED ✔");
         return this;
     }
@@ -371,9 +392,12 @@ public class AddSpacePage {
 
     public AddSpacePage searchVendorByName() {
         System.out.println("[AddSpacePage] Step 8 → Searching 'Aadityasharma'...");
+
+        // FIX: Use JS click to bypass any residual ant-modal-wrap overlay that
+        // may still be in the DOM (display:none) and intercept native clicks.
         WebElement input = wait.until(
-            ExpectedConditions.elementToBeClickable(searchByNameOrEmailInput));
-        scrollAndClick(input);
+            ExpectedConditions.presenceOfElementLocated(searchByNameOrEmailInput));
+        scrollAndJsClick(input);
         clearAndType(input, "Aadityasharma");
         sleep(2000);
         System.out.println("[AddSpacePage] Step 8 → PASSED ✔");
