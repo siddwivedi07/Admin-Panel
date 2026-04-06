@@ -132,7 +132,7 @@ public class AddSpaceTest extends BaseTest {
         // Mobile : 6387626349
         page.fillVendorFormAndSubmit();
         ReportManager.logStep("AddSpace", "TC_07 – Fill Vendor Form and Submit", true);
-        sleep(2_000);
+        sleep(3_000); // extra wait for modal close animation to fully complete
         takeScreenshot("tc07_vendor_form_submitted");
 
         // ── TC_08: Search "Aadityasharma" in search by name/email box ─────────
