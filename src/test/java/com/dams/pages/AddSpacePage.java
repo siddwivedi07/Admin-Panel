@@ -162,17 +162,35 @@ public class AddSpacePage {
     private final By endTimeInput = By.xpath("//input[@id='endTime']");
 
     // ── Step 12 – Select Placement dropdown ───────────────────────────────────
-    // HTML: <input id="rc_select_3" role="combobox" ...> (dynamic id — use role+aria)
-    private final By selectPlacementDropdown = By.xpath(
+    // The placement dropdown uses a dynamic id (rc_select_N) that changes per
+    // render. We use multiple strategies to locate it reliably.
+
+    // Strategy A — by placeholder text on the combobox input
+    private final By selectPlacementByPlaceholder = By.xpath(
         "//div[contains(@class,'ant-select-selector')]" +
-        "[.//input[@placeholder='Select Placement' or " +
-        "  (contains(@id,'rc_select') and @role='combobox')]]"
+        "[.//input[@placeholder='Select Placement']]"
     );
 
-    // Fallback placement — any ant-select that shows "Home Screen" as selection-item
-    private final By selectPlacementDropdownFallback = By.xpath(
-        "(//div[contains(@class,'ant-select-selector')]" +
+    // Strategy B — labelled by a form-item label containing "Placement"
+    private final By selectPlacementByLabel = By.xpath(
+        "//div[contains(@class,'ant-form-item')]" +
+        "[.//label[contains(normalize-space(.),'Placement')]]" +
+        "//div[contains(@class,'ant-select-selector')]"
+    );
+
+    // Strategy C — the last ant-select-selector in the modal (placement is last field)
+    private final By selectPlacementLast = By.xpath(
+        "(//div[contains(@class,'ant-modal-content')]" +
+        "//div[contains(@class,'ant-select-selector')]" +
         "[.//input[@role='combobox']])[last()]"
+    );
+
+    // Strategy D — any ant-select-selector in modal that is NOT already filled
+    // (vendor/dates already filled, placement is the remaining empty one)
+    private final By selectPlacementEmpty = By.xpath(
+        "(//div[contains(@class,'ant-modal-content')]" +
+        "//div[contains(@class,'ant-select-selector')]" +
+        "[.//span[contains(@class,'ant-select-selection-placeholder')]])[1]"
     );
 
     // ── Step 12 – Create Campaign submit button ───────────────────────────────
@@ -538,38 +556,111 @@ public class AddSpacePage {
     }
 
     /**
-     * Selects a Placement option — uses the dynamic rc_select id.
-     * Tries the primary selector first; falls back to the last combobox
-     * on page if the id changes between renders.
+     * Selects a Placement option using multiple fallback strategies.
+     *
+     * The placement dropdown uses a dynamic id (rc_select_N) that changes
+     * between renders, making id-based locators unreliable. We try:
+     *   Strategy A — placeholder="Select Placement" on combobox input
+     *   Strategy B — form-item label containing "Placement"
+     *   Strategy C — last ant-select-selector combobox in modal
+     *   Strategy D — first ant-select with visible placeholder (unfilled field)
+     *
+     * Option matching tries exact → any-dropdown → contains fallback.
      */
     private void selectPlacement(String optionText) {
         System.out.println("[AddSpacePage] → Selecting placement: " + optionText);
-        WebElement selector;
-        try {
-            selector = wait.until(
-                ExpectedConditions.elementToBeClickable(selectPlacementDropdown));
-        } catch (Exception e) {
-            System.out.println("[AddSpacePage] → Placement primary locator failed, using fallback...");
-            selector = wait.until(
-                ExpectedConditions.elementToBeClickable(selectPlacementDropdownFallback));
-        }
-        scrollAndClick(selector);
-        sleep(800);
 
-        By optionLocator = By.xpath(
+        WebElement selector = findPlacementSelector();
+        scrollAndJsClick(selector); // JS click avoids modal overlay interception
+        sleep(1200); // wait for dropdown portal to render in document.body
+
+        // Option strategy 1 — exact match, non-hidden dropdown
+        By optionExact = By.xpath(
             "//div[contains(@class,'ant-select-dropdown')" +
             " and not(contains(@class,'ant-select-dropdown-hidden'))]" +
-            "//div[contains(@class,'ant-select-item-option')" +
-            " and not(contains(@class,'ant-select-item-option-disabled'))]" +
+            "//div[contains(@class,'ant-select-item-option')]" +
             "[normalize-space(.)='" + optionText + "']"
         );
+        // Option strategy 2 — any dropdown (hidden class may vary)
+        By optionAny = By.xpath(
+            "//div[contains(@class,'ant-select-dropdown')]" +
+            "//div[contains(@class,'ant-select-item-option')]" +
+            "[normalize-space(.)='" + optionText + "']"
+        );
+        // Option strategy 3 — contains "Home" (for Home Screen)
+        By optionContains = By.xpath(
+            "//div[contains(@class,'ant-select-dropdown')]" +
+            "//div[contains(@class,'ant-select-item-option')]" +
+            "[contains(normalize-space(.),'Home')]"
+        );
 
-        wait.until(ExpectedConditions.visibilityOfElementLocated(optionLocator));
-        WebElement option = wait.until(
-            ExpectedConditions.elementToBeClickable(optionLocator));
-        scrollAndClick(option);
+        WebElement option = null;
+        try {
+            wait.until(ExpectedConditions.visibilityOfElementLocated(optionExact));
+            option = driver.findElement(optionExact);
+            System.out.println("[AddSpacePage] → Option found via exact match ✔");
+        } catch (Exception e1) {
+            System.out.println("[AddSpacePage] → Exact match failed, trying any-dropdown...");
+            try {
+                new WebDriverWait(driver, Duration.ofSeconds(10))
+                    .until(ExpectedConditions.visibilityOfElementLocated(optionAny));
+                option = driver.findElement(optionAny);
+                System.out.println("[AddSpacePage] → Option found via any-dropdown ✔");
+            } catch (Exception e2) {
+                System.out.println("[AddSpacePage] → any-dropdown failed, trying contains...");
+                try {
+                    new WebDriverWait(driver, Duration.ofSeconds(10))
+                        .until(ExpectedConditions.visibilityOfElementLocated(optionContains));
+                    option = driver.findElement(optionContains);
+                    System.out.println("[AddSpacePage] → Option found via contains match ✔");
+                } catch (Exception e3) {
+                    throw new org.openqa.selenium.TimeoutException(
+                        "[AddSpacePage] Could not find placement option '" + optionText +
+                        "' using any strategy.");
+                }
+            }
+        }
+
+        scrollAndJsClick(option);
         sleep(600);
         System.out.println("[AddSpacePage] → Placement selected: " + optionText + " ✔");
+    }
+
+    /**
+     * Tries each placement selector strategy in order and returns the first
+     * clickable element found.
+     */
+    private WebElement findPlacementSelector() {
+        // Strategy A — by placeholder text on hidden combobox input
+        try {
+            WebElement el = new WebDriverWait(driver, Duration.ofSeconds(5))
+                .until(ExpectedConditions.elementToBeClickable(selectPlacementByPlaceholder));
+            System.out.println("[AddSpacePage] → Placement selector found via placeholder ✔");
+            return el;
+        } catch (Exception ignored) {
+            System.out.println("[AddSpacePage] → Strategy A (placeholder) failed.");
+        }
+        // Strategy B — by form-item label containing "Placement"
+        try {
+            WebElement el = new WebDriverWait(driver, Duration.ofSeconds(5))
+                .until(ExpectedConditions.elementToBeClickable(selectPlacementByLabel));
+            System.out.println("[AddSpacePage] → Placement selector found via label ✔");
+            return el;
+        } catch (Exception ignored) {
+            System.out.println("[AddSpacePage] → Strategy B (label) failed.");
+        }
+        // Strategy C — last combobox in modal (placement is the last dropdown)
+        try {
+            WebElement el = new WebDriverWait(driver, Duration.ofSeconds(5))
+                .until(ExpectedConditions.elementToBeClickable(selectPlacementLast));
+            System.out.println("[AddSpacePage] → Placement selector found via last-in-modal ✔");
+            return el;
+        } catch (Exception ignored) {
+            System.out.println("[AddSpacePage] → Strategy C (last in modal) failed.");
+        }
+        // Strategy D — first unfilled (placeholder visible) select in modal
+        System.out.println("[AddSpacePage] → Trying Strategy D (empty placeholder select)...");
+        return wait.until(ExpectedConditions.elementToBeClickable(selectPlacementEmpty));
     }
 
     /**
