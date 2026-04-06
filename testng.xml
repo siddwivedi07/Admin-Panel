@@ -11,7 +11,8 @@
              <!-- <class name="com.dams.tests.CeoReport.CeoReportTest"/>  -->
              <!-- <class name="com.dams.tests.Reward.RewardTest"/>  -->
             <!-- <class name="com.dams.tests.PrintQbank.PrintQbankTest"/>  -->
-             <class name="com.dams.tests.Jobs.JobsTest"/>  
+             <!-- <class name="com.dams.tests.Jobs.JobsTest"/>   -->
+            <class name="com.dams.tests.AddSpace.AddSpaceTest"/>  
           </classes> 
             
     </test>
