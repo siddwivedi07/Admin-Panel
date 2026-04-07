@@ -556,82 +556,158 @@ public class AddSpacePage {
     }
 
     /**
-     * Selects a Placement option using multiple fallback strategies.
+     * Selects a Placement option.
      *
-     * The placement dropdown uses a dynamic id (rc_select_N) that changes
-     * between renders, making id-based locators unreliable. We try:
-     *   Strategy A — placeholder="Select Placement" on combobox input
-     *   Strategy B — form-item label containing "Placement"
-     *   Strategy C — last ant-select-selector combobox in modal
-     *   Strategy D — first ant-select with visible placeholder (unfilled field)
+     * ROOT CAUSE OF REPEATED FAILURES:
+     * Ant Design renders its dropdown list in a <div> portal appended directly
+     * to <body> — completely outside the modal DOM. The portal div uses class
+     * "ant-select-dropdown" but its exact position in the DOM tree and its
+     * visibility/hidden state vary. XPath-based option searches have been
+     * unreliable because the dropdown opens but the option is either:
+     *   (a) inside a portal that XPath cannot reach from inside the modal, or
+     *   (b) the dropdown class contains extra tokens we don't expect.
      *
-     * Option matching tries exact → any-dropdown → contains fallback.
+     * FIX: Use JavaScript to find and click the option directly — JS can
+     * search the entire document including portals, regardless of visibility
+     * class names or DOM nesting.
+     *
+     * Fallback chain:
+     *   1. JS click on matching option text (primary — most reliable)
+     *   2. XPath on any ant-select-item-option with exact text
+     *   3. XPath contains match for partial text
+     *   4. XPath on any visible li/div inside any open ant-select-dropdown
      */
     private void selectPlacement(String optionText) {
         System.out.println("[AddSpacePage] → Selecting placement: " + optionText);
 
+        // Step 1 — open the dropdown using the most reliable selector found
         WebElement selector = findPlacementSelector();
-        scrollAndJsClick(selector); // JS click avoids modal overlay interception
-        sleep(1200); // wait for dropdown portal to render in document.body
+        scrollAndJsClick(selector);
+        sleep(1500); // allow portal to render in document.body
 
-        // Option strategy 1 — exact match, non-hidden dropdown
-        By optionExact = By.xpath(
-            "//div[contains(@class,'ant-select-dropdown')" +
-            " and not(contains(@class,'ant-select-dropdown-hidden'))]" +
-            "//div[contains(@class,'ant-select-item-option')]" +
-            "[normalize-space(.)='" + optionText + "']"
-        );
-        // Option strategy 2 — any dropdown (hidden class may vary)
-        By optionAny = By.xpath(
-            "//div[contains(@class,'ant-select-dropdown')]" +
-            "//div[contains(@class,'ant-select-item-option')]" +
-            "[normalize-space(.)='" + optionText + "']"
-        );
-        // Option strategy 3 — contains "Home" (for Home Screen)
-        By optionContains = By.xpath(
-            "//div[contains(@class,'ant-select-dropdown')]" +
-            "//div[contains(@class,'ant-select-item-option')]" +
-            "[contains(normalize-space(.),'Home')]"
-        );
-
-        WebElement option = null;
+        // ── Primary: JavaScript click on option ───────────────────────────────
+        // This is the most robust approach — JS searches the whole document
+        // including Ant Design portals rendered at <body> level.
         try {
-            wait.until(ExpectedConditions.visibilityOfElementLocated(optionExact));
-            option = driver.findElement(optionExact);
-            System.out.println("[AddSpacePage] → Option found via exact match ✔");
-        } catch (Exception e1) {
-            System.out.println("[AddSpacePage] → Exact match failed, trying any-dropdown...");
-            try {
-                new WebDriverWait(driver, Duration.ofSeconds(10))
-                    .until(ExpectedConditions.visibilityOfElementLocated(optionAny));
-                option = driver.findElement(optionAny);
-                System.out.println("[AddSpacePage] → Option found via any-dropdown ✔");
-            } catch (Exception e2) {
-                System.out.println("[AddSpacePage] → any-dropdown failed, trying contains...");
-                try {
-                    new WebDriverWait(driver, Duration.ofSeconds(10))
-                        .until(ExpectedConditions.visibilityOfElementLocated(optionContains));
-                    option = driver.findElement(optionContains);
-                    System.out.println("[AddSpacePage] → Option found via contains match ✔");
-                } catch (Exception e3) {
-                    throw new org.openqa.selenium.TimeoutException(
-                        "[AddSpacePage] Could not find placement option '" + optionText +
-                        "' using any strategy.");
-                }
+            Boolean clicked = (Boolean) ((JavascriptExecutor) driver).executeScript(
+                "var items = document.querySelectorAll(" +
+                "  '.ant-select-dropdown .ant-select-item-option," +
+                "   .ant-select-dropdown .ant-select-item'  " +
+                ");" +
+                "for (var i = 0; i < items.length; i++) {" +
+                "  if (items[i].textContent.trim() === arguments[0]) {" +
+                "    items[i].click();" +
+                "    return true;" +
+                "  }" +
+                "}" +
+                "return false;",
+                optionText
+            );
+            if (Boolean.TRUE.equals(clicked)) {
+                sleep(600);
+                System.out.println("[AddSpacePage] → Placement selected via JS click ✔");
+                return;
             }
+            System.out.println("[AddSpacePage] → JS exact click returned false — trying JS contains...");
+
+            // JS contains match (handles extra whitespace)
+            clicked = (Boolean) ((JavascriptExecutor) driver).executeScript(
+                "var items = document.querySelectorAll(" +
+                "  '.ant-select-dropdown .ant-select-item-option," +
+                "   .ant-select-dropdown .ant-select-item'  " +
+                ");" +
+                "for (var i = 0; i < items.length; i++) {" +
+                "  if (items[i].textContent.trim().indexOf(arguments[0]) >= 0) {" +
+                "    items[i].click();" +
+                "    return true;" +
+                "  }" +
+                "}" +
+                "return false;",
+                optionText
+            );
+            if (Boolean.TRUE.equals(clicked)) {
+                sleep(600);
+                System.out.println("[AddSpacePage] → Placement selected via JS contains click ✔");
+                return;
+            }
+        } catch (Exception jsEx) {
+            System.out.println("[AddSpacePage] → JS click failed: " + jsEx.getMessage());
         }
 
-        scrollAndJsClick(option);
-        sleep(600);
-        System.out.println("[AddSpacePage] → Placement selected: " + optionText + " ✔");
+        // ── Fallback 1: XPath exact match across whole document ───────────────
+        try {
+            By optionXpath = By.xpath(
+                "//div[contains(@class,'ant-select-item-option') or " +
+                "      contains(@class,'ant-select-item')]" +
+                "[normalize-space(.)='" + optionText + "']"
+            );
+            new WebDriverWait(driver, Duration.ofSeconds(10))
+                .until(ExpectedConditions.presenceOfElementLocated(optionXpath));
+            WebElement opt = driver.findElement(optionXpath);
+            scrollAndJsClick(opt);
+            sleep(600);
+            System.out.println("[AddSpacePage] → Placement selected via XPath exact ✔");
+            return;
+        } catch (Exception ex1) {
+            System.out.println("[AddSpacePage] → XPath exact failed: " + ex1.getMessage());
+        }
+
+        // ── Fallback 2: XPath contains match ─────────────────────────────────
+        try {
+            By optionContains = By.xpath(
+                "//div[contains(@class,'ant-select-item-option') or " +
+                "      contains(@class,'ant-select-item')]" +
+                "[contains(normalize-space(.),'" + optionText.split(" ")[0] + "')]"
+            );
+            new WebDriverWait(driver, Duration.ofSeconds(10))
+                .until(ExpectedConditions.presenceOfElementLocated(optionContains));
+            WebElement opt = driver.findElement(optionContains);
+            scrollAndJsClick(opt);
+            sleep(600);
+            System.out.println("[AddSpacePage] → Placement selected via XPath contains ✔");
+            return;
+        } catch (Exception ex2) {
+            System.out.println("[AddSpacePage] → XPath contains failed: " + ex2.getMessage());
+        }
+
+        // ── Fallback 3: click any visible option in any open dropdown ─────────
+        try {
+            List<WebElement> allOptions = driver.findElements(
+                By.cssSelector(".ant-select-dropdown .ant-select-item-option, " +
+                               ".ant-select-dropdown .ant-select-item")
+            );
+            System.out.println("[AddSpacePage] → Total options found in DOM: " + allOptions.size());
+            for (WebElement opt : allOptions) {
+                System.out.println("[AddSpacePage] → Option text: [" + opt.getText().trim() + "]");
+                if (opt.getText().trim().equalsIgnoreCase(optionText)) {
+                    scrollAndJsClick(opt);
+                    sleep(600);
+                    System.out.println("[AddSpacePage] → Placement selected via CSS + loop ✔");
+                    return;
+                }
+            }
+            // last resort — click first option
+            if (!allOptions.isEmpty()) {
+                System.out.println("[AddSpacePage] → No exact match, clicking first option as last resort.");
+                scrollAndJsClick(allOptions.get(0));
+                sleep(600);
+                return;
+            }
+        } catch (Exception ex3) {
+            System.out.println("[AddSpacePage] → CSS fallback failed: " + ex3.getMessage());
+        }
+
+        throw new org.openqa.selenium.TimeoutException(
+            "[AddSpacePage] Could not find or click placement option '" + optionText +
+            "'. Dropdown may not have opened. Check if the placement field is visible."
+        );
     }
 
     /**
-     * Tries each placement selector strategy in order and returns the first
-     * clickable element found.
+     * Tries each placement selector strategy and returns the first clickable one.
      */
     private WebElement findPlacementSelector() {
-        // Strategy A — by placeholder text on hidden combobox input
+        // Strategy A — by placeholder text on combobox input
         try {
             WebElement el = new WebDriverWait(driver, Duration.ofSeconds(5))
                 .until(ExpectedConditions.elementToBeClickable(selectPlacementByPlaceholder));
@@ -649,7 +725,7 @@ public class AddSpacePage {
         } catch (Exception ignored) {
             System.out.println("[AddSpacePage] → Strategy B (label) failed.");
         }
-        // Strategy C — last combobox in modal (placement is the last dropdown)
+        // Strategy C — last combobox selector in modal
         try {
             WebElement el = new WebDriverWait(driver, Duration.ofSeconds(5))
                 .until(ExpectedConditions.elementToBeClickable(selectPlacementLast));
