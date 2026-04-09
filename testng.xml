@@ -13,7 +13,9 @@
             <!-- <class name="com.dams.tests.PrintQbank.PrintQbankTest"/>  -->
              <!-- <class name="com.dams.tests.Jobs.JobsTest"/>   -->
             <!-- <class name="com.dams.tests.AddSpace.AddSpaceTest"/> -->
-              <class name="com.dams.tests.RadioCases.RadioCasesTest"/>
+              <!-- <class name="com.dams.tests.RadioCases.RadioCasesTest"/> -->
+              <!-- <class name="com.dams.tests.HelpAndSupport.HelpAndSupportTest"/> -->
+              <class name="com.dams.tests.AppDonload.AppDownloadTest"/>
           </classes> 
             
     </test>
