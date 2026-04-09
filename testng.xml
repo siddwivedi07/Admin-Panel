@@ -15,7 +15,7 @@
             <!-- <class name="com.dams.tests.AddSpace.AddSpaceTest"/> -->
               <!-- <class name="com.dams.tests.RadioCases.RadioCasesTest"/> -->
               <!-- <class name="com.dams.tests.HelpAndSupport.HelpAndSupportTest"/> -->
-              <class name="com.dams.tests.AppDonloadPage.AppDownloadPage"/>
+              <class name="com.dams.tests.AppDonload.AppDownloadTest"/>
           </classes> 
             
     </test>
