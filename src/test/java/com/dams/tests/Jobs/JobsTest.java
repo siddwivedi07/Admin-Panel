@@ -26,21 +26,21 @@ import java.util.List;
  * Package : com.dams.tests.Jobs
  * Suite   : testng.xml → <class name="com.dams.tests.Jobs.JobsTest"/>
  *
- * Single @Test method so all steps (Login + TC_01 … TC_08)
- * run in one browser session.
+ * Single @Test method — all steps run in one browser session.
  *
  * Flow:
  *   TC_01 – Click Jobs menu link  (/jobs)
  *   TC_02 – Click Applied Job card
- *   TC_03 – Search "Ravi" in Applied Job search box + screenshot
+ *   TC_03 – Search "Test" in Applied Job search box  (placeholder="Search job")
  *   TC_04 – Navigate back from Applied Job
  *   TC_05 – Click Job Post card
- *   TC_06 – Search "Dentist" in Job Post search box
+ *   TC_06 – Search "Fortis Hospital" in Job Post search box
  *   TC_07 – Click Add Job button + fill form
- *             (Company=Max Hospital, Title=Dentist, Location=Delhi,
- *              Type=Full Time, Experience=1-3 Yr, Salary Type=Monthly,
- *              Salary Range=30000)
- *   TC_08 – Click Post Job (submit) button
+ *             (Company=Fortis, Title=Devops, Location=Noida,
+ *              Type=Full Time, Experience=2, Salary Type=Monthly,
+ *              Salary Range=500-1000, Show Salary=Yes,
+ *              Job Highlights=selenium, Key Accountabilities=selenium)
+ *   TC_09 – Click Post Job (submit) button
  */
 public class JobsTest extends BaseTest {
 
@@ -101,11 +101,11 @@ public class JobsTest extends BaseTest {
         sleep(3_000);
         takeScreenshot("tc02_applied_job_card");
 
-        // ── TC_03: Search "Ravi" in Applied Job search box + screenshot ────────
-        page.searchRaviInAppliedJob();
-        ReportManager.logStep("Jobs", "TC_03 – Search Ravi in Applied Job", true);
+        // ── TC_03: Search "Test" in Applied Job search box ───────────────────
+        page.searchTestInAppliedJob();
+        ReportManager.logStep("Jobs", "TC_03 – Search Test in Applied Job", true);
         sleep(2_000);
-        takeScreenshot("tc03_search_ravi_applied_job"); // captures loaded search results
+        takeScreenshot("tc03_search_test_applied_job");
 
         // ── TC_04: Navigate back from Applied Job ─────────────────────────────
         page.navigateBackFromAppliedJob();
@@ -119,46 +119,32 @@ public class JobsTest extends BaseTest {
         sleep(3_000);
         takeScreenshot("tc05_job_post_card");
 
-        // ── TC_06: Search "Dentist" in Job Post search box ────────────────────
-        page.searchDentistInJobPost();
-        ReportManager.logStep("Jobs", "TC_06 – Search Dentist in Job Post", true);
+        // ── TC_06: Search "Fortis Hospital" in Job Post search box ────────────
+        page.searchFortisInJobPost();
+        ReportManager.logStep("Jobs", "TC_06 – Search Fortis Hospital in Job Post", true);
         sleep(2_000);
-        takeScreenshot("tc06_search_dentist_job_post");
+        takeScreenshot("tc06_search_fortis_job_post");
 
         // ── TC_07: Click Add Job button + fill entire form ─────────────────────
-        // Fills: Company=Max Hospital, Title=Dentist, Location=Delhi,
-        //        Type=Full Time, Experience=1 - 3 Yr,
-        //        Salary Type=Monthly, Salary Range=30000
+        // Company=Fortis, Title=Devops, Location=Noida, Type=Full Time,
+        // Experience=2, Salary Type=Monthly, Salary Range=500-1000,
+        // Show Salary=Yes, Job Highlights=selenium, Key Accountabilities=selenium
         page.clickAddJobAndFillForm();
         ReportManager.logStep("Jobs", "TC_07 – Add Job Form Filled", true);
         sleep(2_000);
         takeScreenshot("tc07_add_job_form_filled");
 
-        // ── TC_08: Click Post Job (submit) button ─────────────────────────────
+        // ── TC_09: Click Post Job (submit) button ─────────────────────────────
         page.clickPostJobButton();
-        ReportManager.logStep("Jobs", "TC_08 – Click Post Job Button", true);
+        ReportManager.logStep("Jobs", "TC_09 – Click Post Job Button", true);
         sleep(3_000);
-        takeScreenshot("tc08_post_job_submitted");
+        takeScreenshot("tc09_post_job_submitted");
 
         System.out.println("[JobsTest] ✅ jobsFullFlowTest PASSED");
     }
 
     // ── Wait helper: tries multiple locator strategies before failing ─────────
 
-    /**
-     * Attempts to locate the Jobs menu link using multiple XPath strategies.
-     *
-     * After OTP login, Ant Design sidebar menus render asynchronously and may
-     * be in a collapsed/icon-only state, making strict XPaths absent from the
-     * DOM even after the page appears visually ready.
-     *
-     * Strategy order:
-     *  1. Primary full XPath — up to 60 s
-     *  2. href-only           — 10 s  (collapsed or icon-only menu)
-     *  3. sidebar <li> text  — 10 s  (alternate Ant Design structure)
-     *  4. any ancestor text  — 10 s  (any sidebar/menu ancestor)
-     *  5. JS querySelector   — instant (last resort, broadest)
-     */
     private void waitForJobsMenuVisible() {
         WebDriverWait longWait  = new WebDriverWait(driver, Duration.ofSeconds(60));
         WebDriverWait shortWait = new WebDriverWait(driver, Duration.ofSeconds(10));
