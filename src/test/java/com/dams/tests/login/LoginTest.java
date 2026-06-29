@@ -14,31 +14,9 @@ import java.time.format.DateTimeFormatter;
 
 public class LoginTest extends BaseTest {
 
-    @Test(description = "Admin login with email, password, and OTP")
+    @Test(description = "LoginTest")
     public void adminLoginTest() {
         LoginPage loginPage = new LoginPage(driver);
         loginPage.loginToAdminPortal();
-
-        // ── Wait 20s for dashboard to fully load, then screenshot ──
-        System.out.println("[LoginTest] Waiting 20s for dashboard to fully load...");
-        try {
-            Thread.sleep(20_000);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
-        try {
-            Files.createDirectories(Paths.get("screenshots"));
-            String timestamp = LocalDateTime.now()
-                    .format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-            String fileName = "screenshots/login_dashboard_" + timestamp + ".png";
-
-            File src = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
-            Files.copy(src.toPath(), Paths.get(fileName));
-
-            System.out.println("[LoginTest] ✔ Dashboard screenshot saved: " + fileName);
-        } catch (Exception e) {
-            System.err.println("[LoginTest] ✘ Screenshot failed: " + e.getMessage());
-        }
     }
 }
