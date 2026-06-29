@@ -5,7 +5,7 @@
     </listeners>
     <test name="DAMS Regression">
         <classes>
-             <!--<class name="com.dams.tests.login.LoginTest"/> 
+             <class name="com.dams.tests.login.LoginTest"/> 
              <<class name="com.dams.tests.PaymentEmi.PaymentEmiTest"/>
              <class name="com.dams.tests.GenerateQrCode.GenerateQrCodeTest"/>
              <class name="com.dams.tests.CeoReport.CeoReportTest"/>
@@ -14,7 +14,7 @@
              <class name="com.dams.tests.Jobs.JobsTest"/>
              <class name="com.dams.tests.AddSpace.AddSpaceTest"/>
              <class name="com.dams.tests.RadioCases.RadioCasesTest"/>
-             <class name="com.dams.tests.HelpAndSupport.HelpAndSupportTest"/>-->
+             <class name="com.dams.tests.HelpAndSupport.HelpAndSupportTest"/>
              <class name="com.dams.tests.AppDownload.AppDownloadTest"/>
           </classes> 
             
