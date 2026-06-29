@@ -14,22 +14,25 @@ import java.util.List;
 /**
  * Page Object Model for the Jobs module.
  *
- * Covers:
- *  Step 1 – Jobs sidebar menu item  (/jobs)
- *  Step 2 – Applied Job card → enter page
- *  Step 3 – Search box → type "Ravi" → screenshot
+ * Flow:
+ *  Step 1 – Click Jobs sidebar menu  (/jobs)
+ *  Step 2 – Click Applied Job card
+ *  Step 3 – Search "Test" in Applied Job search box  (placeholder="Search job")
  *  Step 4 – Navigate back from Applied Job
- *  Step 5 – Job Post card → enter page
- *  Step 6 – Search job box → type "Dentist"
- *  Step 7 – Add Job button → fill form:
- *             • Company/Hospital  → "Max Hospital"
- *             • Job Title         → "Dentist"
- *             • Job Location      → "Delhi"
- *             • Job Type          → "Full Time"
- *             • Job Experience    → "1 - 3 Yr"
- *             • Salary Type       → "Monthly"
- *             • Salary Range      → "30000"
- *  Step 8 – Post Job (submit) button
+ *  Step 5 – Click Job Post card
+ *  Step 6 – Search "Fortis Hospital" in Job Post search box
+ *  Step 7 – Click Add Job button, fill form:
+ *             • Company/Hospital  → "Fortis"        (plain text input)
+ *             • Job Title         → "Devops"        (plain text input)
+ *             • Job Location      → "Noida"         (plain text input)
+ *             • Job Type          → "Full Time"     (Ant Select dropdown)
+ *             • Job Experience    → "2"             (plain text input)
+ *             • Salary Type       → "Monthly"       (Ant Select dropdown)
+ *             • Salary Range      → "500-1000"      (plain text input)
+ *             • Show Salary       → "Yes"           (Ant Select dropdown)
+ *             • Job Highlights    → "selenium"      (textarea)
+ *             • Key Accountabilities → "selenium"   (textarea)
+ *  Step 9 – Click Post Job submit button
  */
 public class JobsPage {
 
@@ -37,7 +40,6 @@ public class JobsPage {
     private final WebDriverWait wait;
 
     // ── Step 1 – Jobs sidebar menu ────────────────────────────────────────────
-    // HTML: <span class="ant-menu-title-content"><a href="/jobs">Jobs</a></span>
     private final By jobsMenuLink = By.xpath(
         "//span[contains(@class,'ant-menu-title-content')]" +
         "/a[@href='/jobs']"
@@ -55,11 +57,19 @@ public class JobsPage {
     );
 
     // ── Step 3 – Applied Job search box ──────────────────────────────────────
-    // HTML: <input placeholder="Search..." class="ant-input ..." type="text">
-    //       wrapped in ant-input-affix-wrapper with a clear (X) button
-    private final By appliedJobSearchInput = By.xpath(
-        "//span[contains(@class,'ant-input-affix-wrapper')]" +
-        "//input[contains(@class,'ant-input') and @placeholder='Search...']"
+    // HTML: <input placeholder="Search job" class="ant-input ..." type="text">
+    // Primary: any wrapper + ant-input with placeholder="Search job"
+    private final By appliedJobSearchPrimary = By.xpath(
+        "//*[contains(@class,'ant-input-affix-wrapper')]" +
+        "//input[contains(@class,'ant-input') and @placeholder='Search job']"
+    );
+    // Fallback 1: ant-input with placeholder, no wrapper constraint
+    private final By appliedJobSearchFallback1 = By.xpath(
+        "//input[@placeholder='Search job' and contains(@class,'ant-input')]"
+    );
+    // Fallback 2: any input with placeholder="Search job"
+    private final By appliedJobSearchFallback2 = By.xpath(
+        "//input[@placeholder='Search job']"
     );
 
     // ── Step 5 – Job Post card ────────────────────────────────────────────────
@@ -70,12 +80,10 @@ public class JobsPage {
         "normalize-space(.)='Job Post']]"
     );
 
-    // ── Step 6 – Job Post search box ──────────────────────────────────────────
+    // ── Step 6 – Job Post search box ─────────────────────────────────────────
     // HTML: <input placeholder="Search job" class="ant-input ..." type="text">
-    //       wrapped in ant-input-affix-wrapper
     private final By jobPostSearchInput = By.xpath(
-        "//span[contains(@class,'ant-input-affix-wrapper')]" +
-        "//input[contains(@class,'ant-input') and @placeholder='Search job']"
+        "//input[@placeholder='Search job' and contains(@class,'ant-input')]"
     );
 
     // ── Step 7 – Add Job button ───────────────────────────────────────────────
@@ -85,57 +93,71 @@ public class JobsPage {
         "[.//span[normalize-space(.)='Add Job']]"
     );
 
-    // ── Step 7 – Company/Hospital dropdown ───────────────────────────────────
-    // HTML: <input id="company_or_hospital_name" role="combobox" ...>
-    private final By companyHospitalDropdown = By.xpath(
-        "//div[contains(@class,'ant-select-selector')]" +
-        "[.//input[@id='company_or_hospital_name']]"
+    // ── Step 7 – Form: Company/Hospital plain text input ─────────────────────
+    // HTML: <input placeholder="Enter company / hospital name" id="company_or_hospital_name" ...>
+    private final By companyHospitalInput = By.xpath(
+        "//input[@id='company_or_hospital_name']"
     );
 
-    // ── Step 7 – Job Title dropdown ───────────────────────────────────────────
-    // HTML: <input id="job_title" role="combobox" ...>
-    private final By jobTitleDropdown = By.xpath(
-        "//div[contains(@class,'ant-select-selector')]" +
-        "[.//input[@id='job_title']]"
+    // ── Step 7 – Form: Job Title plain text input ─────────────────────────────
+    // HTML: <input placeholder="Enter job title" id="job_title" ...>
+    private final By jobTitleInput = By.xpath(
+        "//input[@id='job_title']"
     );
 
-    // ── Step 7 – Job Location input ───────────────────────────────────────────
-    // HTML: <input id="job_location" placeholder="Enter location (Delhi, Noida)">
+    // ── Step 7 – Form: Job Location plain text input ──────────────────────────
+    // HTML: <input placeholder="Enter location" id="job_location" ...>
     private final By jobLocationInput = By.xpath(
         "//input[@id='job_location']"
     );
 
-    // ── Step 7 – Job Type dropdown ────────────────────────────────────────────
-    // HTML: <input id="job_type" role="combobox" ...>
+    // ── Step 7 – Form: Job Type Ant Select dropdown ───────────────────────────
+    // HTML: <div class="ant-select-selector">...<input id="job_type" ...>...</div>
     private final By jobTypeDropdown = By.xpath(
         "//div[contains(@class,'ant-select-selector')]" +
         "[.//input[@id='job_type']]"
     );
 
-    // ── Step 7 – Job Experience dropdown ─────────────────────────────────────
-    // HTML: <input id="job_experience" role="combobox" ...>
-    private final By jobExperienceDropdown = By.xpath(
-        "//div[contains(@class,'ant-select-selector')]" +
-        "[.//input[@id='job_experience']]"
+    // ── Step 7 – Form: Job Experience plain text input ────────────────────────
+    // HTML: <input placeholder="e.g. 1-3 years" id="job_experience" ...>
+    private final By jobExperienceInput = By.xpath(
+        "//input[@id='job_experience']"
     );
 
-    // ── Step 7 – Salary Type dropdown ────────────────────────────────────────
-    // HTML: <input id="salary_type" role="combobox" ...>
+    // ── Step 7 – Form: Salary Type Ant Select dropdown ───────────────────────
+    // HTML: <div class="ant-select-selector">...<input id="salary_type" ...>...</div>
     private final By salaryTypeDropdown = By.xpath(
         "//div[contains(@class,'ant-select-selector')]" +
         "[.//input[@id='salary_type']]"
     );
 
-    // ── Step 7 – Salary Range input ───────────────────────────────────────────
-    // HTML: <input id="salary_range" placeholder="e.g. 60000 - 80000">
+    // ── Step 7 – Form: Salary Range plain text input ──────────────────────────
+    // HTML: <input placeholder="e.g. 60000 - 80000" id="salary_range" ...>
     private final By salaryRangeInput = By.xpath(
         "//input[@id='salary_range']"
     );
 
-    // ── Step 8 – Post Job submit button ──────────────────────────────────────
-    // HTML: <button type="submit" class="ant-btn ant-btn-primary ...">
-    //         <span>Post Job</span>
-    //       </button>
+    // ── Step 7 – Form: Show Salary Ant Select dropdown ───────────────────────
+    // HTML: <div class="ant-select-selector">...<input id="show_salary" ...>...</div>
+    private final By showSalaryDropdown = By.xpath(
+        "//div[contains(@class,'ant-select-selector')]" +
+        "[.//input[@id='show_salary']]"
+    );
+
+    // ── Step 7 – Form: Job Highlights textarea ───────────────────────────────
+    // HTML: <textarea placeholder="Enter job highlights (one per line)" ...>
+    private final By jobHighlightsTextarea = By.xpath(
+        "//textarea[@placeholder='Enter job highlights (one per line)']"
+    );
+
+    // ── Step 7 – Form: Key Accountabilities textarea ─────────────────────────
+    // HTML: <textarea placeholder="Enter key accountabilities (one per line)" ...>
+    private final By keyAccountabilitiesTextarea = By.xpath(
+        "//textarea[@placeholder='Enter key accountabilities (one per line)']"
+    );
+
+    // ── Step 9 – Post Job submit button ──────────────────────────────────────
+    // HTML: <button type="submit" class="ant-btn ant-btn-primary ..."><span>Post Job</span></button>
     private final By postJobButton = By.xpath(
         "//button[@type='submit']" +
         "[contains(@class,'ant-btn-primary')]" +
@@ -153,10 +175,6 @@ public class JobsPage {
     //  STEP 1 – Click Jobs menu link
     // ══════════════════════════════════════════════════════════════════════════
 
-    /**
-     * Clicks the 'Jobs' sidebar menu entry.
-     * Three-pass strategy: primary → href-only → expand sidebar + retry.
-     */
     public JobsPage clickJobsMenu() {
         System.out.println("[JobsPage] Step 1 → Clicking 'Jobs' menu...");
         WebElement element = findJobsMenuElement();
@@ -218,35 +236,57 @@ public class JobsPage {
         WebElement element = wait.until(
             ExpectedConditions.elementToBeClickable(appliedJobCard));
         scrollAndClick(element);
-        sleep(2000);
+        // Extra wait: give the Applied Job page time to fully render including the search box
+        sleep(4000);
         System.out.println("[JobsPage] Step 2 → PASSED ✔");
         return this;
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    //  STEP 3 – Search "Ravi" in Applied Job search box
+    //  STEP 3 – Search "Test" in Applied Job search box
     // ══════════════════════════════════════════════════════════════════════════
 
     /**
-     * Locates the Search input (placeholder="Search...") inside the
-     * ant-input-affix-wrapper, clears any existing value, types "Ravi"
-     * and waits for the table to reload.
-     *
-     * Screenshot is taken in JobsTest after this returns so it captures
-     * the fully loaded results.
+     * Finds the search input (placeholder="Search job") using three
+     * progressively broader strategies, clears it, then types "Test".
      */
-    public JobsPage searchRaviInAppliedJob() {
-        System.out.println("[JobsPage] Step 3 → Typing 'Ravi' in Applied Job search box...");
-        WebElement input = wait.until(
-            ExpectedConditions.elementToBeClickable(appliedJobSearchInput));
+    public JobsPage searchTestInAppliedJob() {
+        System.out.println("[JobsPage] Step 3 → Typing 'Test' in Applied Job search box...");
+        WebElement input = findAppliedJobSearchInput();
         scrollAndClick(input);
         input.sendKeys(Keys.CONTROL + "a");
         input.sendKeys(Keys.DELETE);
         input.clear();
-        input.sendKeys("Ravi");
+        input.sendKeys("Test");
         sleep(2000);
-        System.out.println("[JobsPage] Step 3 → 'Ravi' entered ✔");
+        System.out.println("[JobsPage] Step 3 → 'Test' entered ✔");
         return this;
+    }
+
+    private WebElement findAppliedJobSearchInput() {
+        // Strategy 1 – //* wrapper (span or div), ant-input, placeholder=Search job
+        try {
+            WebElement el = wait.until(
+                ExpectedConditions.elementToBeClickable(appliedJobSearchPrimary));
+            System.out.println("[JobsPage] Search input found via primary locator ✔");
+            return el;
+        } catch (Exception ignored) {
+            System.out.println("[JobsPage] Primary search locator timed out — trying fallback 1...");
+        }
+        // Strategy 2 – ant-input class + placeholder, no wrapper
+        try {
+            WebElement el = new WebDriverWait(driver, Duration.ofSeconds(15))
+                .until(ExpectedConditions.elementToBeClickable(appliedJobSearchFallback1));
+            System.out.println("[JobsPage] Search input found via fallback-1 locator ✔");
+            return el;
+        } catch (Exception ignored) {
+            System.out.println("[JobsPage] Fallback-1 search locator timed out — trying fallback 2...");
+        }
+        // Strategy 3 – broadest: any input[placeholder='Search job']
+        WebElement el = new WebDriverWait(driver, Duration.ofSeconds(15))
+            .until(ExpectedConditions.elementToBeClickable(appliedJobSearchFallback2));
+        System.out.println("[JobsPage] Search input found via fallback-2 locator ✔");
+        return el;
     }
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -270,46 +310,45 @@ public class JobsPage {
         WebElement element = wait.until(
             ExpectedConditions.elementToBeClickable(jobPostCard));
         scrollAndClick(element);
-        sleep(2000);
+        sleep(3000);
         System.out.println("[JobsPage] Step 5 → PASSED ✔");
         return this;
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    //  STEP 6 – Search "Dentist" in Job Post search box
+    //  STEP 6 – Search "Fortis Hospital" in Job Post search box
     // ══════════════════════════════════════════════════════════════════════════
 
-    /**
-     * Locates the job search input (placeholder="Search job"), clears it,
-     * types "Dentist" and waits for results.
-     */
-    public JobsPage searchDentistInJobPost() {
-        System.out.println("[JobsPage] Step 6 → Typing 'Dentist' in Job Post search box...");
+    public JobsPage searchFortisInJobPost() {
+        System.out.println("[JobsPage] Step 6 → Typing 'Fortis Hospital' in Job Post search box...");
         WebElement input = wait.until(
             ExpectedConditions.elementToBeClickable(jobPostSearchInput));
         scrollAndClick(input);
         input.sendKeys(Keys.CONTROL + "a");
         input.sendKeys(Keys.DELETE);
         input.clear();
-        input.sendKeys("Dentist");
+        input.sendKeys("Fortis Hospital");
         sleep(2000);
-        System.out.println("[JobsPage] Step 6 → 'Dentist' entered ✔");
+        System.out.println("[JobsPage] Step 6 → 'Fortis Hospital' entered ✔");
         return this;
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    //  STEP 7 – Click Add Job, fill the form
+    //  STEP 7 – Click Add Job button + fill the entire form
     // ══════════════════════════════════════════════════════════════════════════
 
     /**
-     * Clicks the 'Add Job' button, then fills every field in the job form:
-     *   • Company/Hospital  → "Max Hospital"   (Ant Select, id=company_or_hospital_name)
-     *   • Job Title         → "Dentist"         (Ant Select, id=job_title)
-     *   • Job Location      → "Delhi"           (plain input, id=job_location)
-     *   • Job Type          → "Full Time"       (Ant Select, id=job_type)
-     *   • Job Experience    → "1 - 3 Yr"        (Ant Select, id=job_experience)
-     *   • Salary Type       → "Monthly"         (Ant Select, id=salary_type)
-     *   • Salary Range      → "30000"           (plain input, id=salary_range)
+     * Clicks the 'Add Job' button then fills every field:
+     *   • Company/Hospital     → "Fortis"     (plain text input)
+     *   • Job Title            → "Devops"     (plain text input)
+     *   • Job Location         → "Noida"      (plain text input)
+     *   • Job Type             → "Full Time"  (Ant Select dropdown)
+     *   • Job Experience       → "2"          (plain text input)
+     *   • Salary Type          → "Monthly"    (Ant Select dropdown)
+     *   • Salary Range         → "500-1000"   (plain text input)
+     *   • Show Salary          → "Yes"        (Ant Select dropdown)
+     *   • Job Highlights       → "selenium"   (textarea)
+     *   • Key Accountabilities → "selenium"   (textarea)
      */
     public JobsPage clickAddJobAndFillForm() {
         System.out.println("[JobsPage] Step 7 → Clicking 'Add Job' button...");
@@ -318,68 +357,64 @@ public class JobsPage {
         scrollAndJsClick(addBtn);
         sleep(2000);
 
-        // Company / Hospital
-        selectAntDropdown(companyHospitalDropdown, "Max Hospital");
+        // Company / Hospital — plain text input
+        fillInput(companyHospitalInput, "Fortis");
 
-        // Job Title
-        selectAntDropdown(jobTitleDropdown, "Dentist");
+        // Job Title — plain text input
+        fillInput(jobTitleInput, "Devops");
 
-        // Job Location
-        fillInput(jobLocationInput, "Delhi");
+        // Job Location — plain text input
+        fillInput(jobLocationInput, "Noida");
 
-        // Job Type
+        // Job Type — Ant Select dropdown
         selectAntDropdown(jobTypeDropdown, "Full Time");
 
-        // Job Experience
-        selectAntDropdown(jobExperienceDropdown, "1 - 3 Yr");
+        // Job Experience — plain text input
+        fillInput(jobExperienceInput, "2");
 
-        // Salary Type
+        // Salary Type — Ant Select dropdown
         selectAntDropdown(salaryTypeDropdown, "Monthly");
 
-        // Salary Range
-        fillInput(salaryRangeInput, "30000");
+        // Salary Range — plain text input
+        fillInput(salaryRangeInput, "500-1000");
+
+        // Show Salary — Ant Select dropdown
+        selectAntDropdown(showSalaryDropdown, "Yes");
+
+        // Job Highlights — textarea
+        fillTextarea(jobHighlightsTextarea, "selenium");
+
+        // Key Accountabilities — textarea
+        fillTextarea(keyAccountabilitiesTextarea, "selenium");
 
         System.out.println("[JobsPage] Step 7 → Form filled ✔");
         return this;
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    //  STEP 8 – Click Post Job (submit) button
+    //  STEP 9 – Click Post Job (submit) button
     // ══════════════════════════════════════════════════════════════════════════
 
-    /**
-     * Clicks the 'Post Job' submit button.
-     * Uses JS click to bypass any overlay after the form is filled.
-     */
     public JobsPage clickPostJobButton() {
-        System.out.println("[JobsPage] Step 8 → Clicking 'Post Job' button...");
+        System.out.println("[JobsPage] Step 9 → Clicking 'Post Job' button...");
         wait.until(ExpectedConditions.presenceOfElementLocated(postJobButton));
         WebElement element = wait.until(
             ExpectedConditions.elementToBeClickable(postJobButton));
         scrollAndJsClick(element);
         sleep(2000);
-        System.out.println("[JobsPage] Step 8 → PASSED ✔");
+        System.out.println("[JobsPage] Step 9 → PASSED ✔");
         return this;
     }
 
     // ── Shared helpers ────────────────────────────────────────────────────────
 
     /**
-     * Opens an Ant Design Select dropdown identified by its selector div,
-     * waits for the option list, then clicks the option matching optionText.
-     *
-     * Ant Design Select uses a hidden readonly <input style="opacity:0">.
-     * The correct approach is:
-     *   1. Click the visible div.ant-select-selector  → opens dropdown
-     *   2. Wait for div.ant-select-dropdown to appear
-     *   3. Click the matching div.ant-select-item-option
-     *
-     * @param selectorLocator  By locator targeting the ant-select-selector div
-     * @param optionText       exact visible text of the option to select
+     * Opens an Ant Design Select dropdown and clicks the matching option.
+     * Strategy: click the visible div.ant-select-selector → wait for dropdown
+     * to appear → click the matching div.ant-select-item-option.
      */
     private void selectAntDropdown(By selectorLocator, String optionText) {
         System.out.println("[JobsPage] → Opening dropdown for option: " + optionText);
-
         WebElement selector = wait.until(
             ExpectedConditions.elementToBeClickable(selectorLocator));
         scrollAndClick(selector);
@@ -402,8 +437,8 @@ public class JobsPage {
     }
 
     /**
-     * Clears a plain text input field and types the given value.
-     * Uses JS to reset value first, then sends keys for React/Ant state update.
+     * Clears a plain <input> and types the given value.
+     * Uses JS to reset value first so React/Ant state is properly cleared.
      */
     private void fillInput(By inputLocator, String value) {
         System.out.println("[JobsPage] → Filling input with: " + value);
@@ -420,16 +455,31 @@ public class JobsPage {
         System.out.println("[JobsPage] → Entered: " + value + " ✔");
     }
 
+    /**
+     * Clears a <textarea> and types the given value.
+     */
+    private void fillTextarea(By textareaLocator, String value) {
+        System.out.println("[JobsPage] → Filling textarea with: " + value);
+        WebElement textarea = wait.until(
+            ExpectedConditions.elementToBeClickable(textareaLocator));
+        scrollAndClick(textarea);
+        ((JavascriptExecutor) driver).executeScript(
+            "arguments[0].value = '';", textarea);
+        textarea.sendKeys(Keys.CONTROL + "a");
+        textarea.sendKeys(Keys.DELETE);
+        textarea.clear();
+        textarea.sendKeys(value);
+        sleep(400);
+        System.out.println("[JobsPage] → Textarea filled: " + value + " ✔");
+    }
+
     private void scrollAndClick(WebElement element) {
         ((JavascriptExecutor) driver).executeScript(
             "arguments[0].scrollIntoView({block:'center'});", element);
         element.click();
     }
 
-    /**
-     * JavaScript click — bypasses any overlay / intercept.
-     * Used for Add Job and Post Job buttons.
-     */
+    /** JavaScript click — bypasses any overlay / intercept. */
     private void scrollAndJsClick(WebElement element) {
         ((JavascriptExecutor) driver).executeScript(
             "arguments[0].scrollIntoView({block:'center'});", element);
