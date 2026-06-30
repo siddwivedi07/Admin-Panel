@@ -5,57 +5,6 @@ on:
     branches:
       - main
   workflow_dispatch:
-    inputs:
-      module:
-        description: "Select Selenium Module"
-        required: true
-        type: choice
-        default: all
-        options:
-          - all
-          - LoginTest
-          - DashboardTest
-          - JobTest
-          - GenerateQRCodeTest
-          - SalesBiReportTest
-          - RadioCasessTest
-          - OpportunityTest
-          - AppDownloadTest
-          - BusinessIntelligenceTest
-          - CEOReportTest
-          - ReportTest
-          - AddSpaceTest
-          - AiDataTest
-          - CreatePlanTest
-          - AffiliateReferralTest
-          - StudentMigrateTest
-          - CommunicationTest
-          - CrmTest
-          - UserPanelTest
-          - PrintQbankTest
-          - HelpAndSupportTest
-          - ReferralManagementTest
-          - RefundTest
-          - PaymentEmiTest
-          - SchedulerTest
-          - VideoPodcastTest
-          - InventoryTest
-          - PartialPaymentTest
-          - BulkOrderTest
-          - CouponTest
-          - CourseSettingTest
-          - DeveloperTest
-          - BannersTest
-          - WebManagementTest
-          - RewardTest
-          - SuperAdminTest
-          - ManualTransTest
-          - MastersTest
-          - FaceToFaceTest
-          - PartnerTest
-          - ProductManagementTest
-          - FileLibraryTest
-          - BroadcastLiveTest
           
 jobs:
   run-selenium-tests:
