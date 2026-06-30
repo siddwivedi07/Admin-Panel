@@ -1,0 +1,106 @@
+name: DAMS Admin Panel Selenium
+
+on:
+  workflow_dispatch:
+    inputs:
+      module:
+        description: "Select Selenium Module"
+        required: true
+        type: choice
+        default: all
+        options:
+          - all
+          - LoginTest
+          - DashboardTest
+          - JobTest
+          - GenerateQRCodeTest
+          - SalesBiReportTest
+          - RadioCasessTest
+          - OpportunityTest
+          - AppDownloadTest
+          - BusinessIntelligenceTest
+          - CEOReportTest
+          - ReportTest
+          - AddSpaceTest
+          - AiDataTest
+          - CreatePlanTest
+          - AffiliateReferralTest
+          - StudentMigrateTest
+          - CommunicationTest
+          - CrmTest
+          - UserPanelTest
+          - PrintQbankTest
+          - HelpAndSupportTest
+          - ReferralManagementTest
+          - RefundTest
+          - PaymentEmiTest
+          - SchedulerTest
+          - VideoPodcastTest
+          - InventoryTest
+          - PartialPaymentTest
+          - BulkOrderTest
+          - CouponTest
+          - CourseSettingTest
+          - DeveloperTest
+          - BannersTest
+          - WebManagementTest
+          - RewardTest
+          - SuperAdminTest
+          - ManualTransTest
+          - MastersTest
+          - FaceToFaceTest
+          - PartnerTest
+          - ProductManagementTest
+          - FileLibraryTest
+          - BroadcastLiveTest
+          
+jobs:
+  run-selenium-tests:
+    runs-on: ubuntu-latest
+    env:
+      ADMIN_LOGIN: ${{ secrets.ADMIN_LOGIN }}
+      CI: true
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: ☕ Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: maven
+
+      - name: 📦 Install Chrome
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: latest
+
+      - name: 🔍 Verify Chrome Version
+        run: google-chrome --version
+
+      - name: 🧪 Run Selenium Tests
+        run: |
+          if [ "${{ github.event.inputs.module }}" = "all" ]; then
+            mvn clean test -Dsurefire.suiteXmlFiles=testng.xml
+          else
+            mvn clean test -Dtest=${{ github.event.inputs.module }}
+          fi
+
+      - name: 📊 Upload DAMS Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: DAMS-Admin-Panel-Selenium-Report-${{ github.run_number }}
+          path: |
+            DAMS_Selenium_Report_*.html
+            screenshots/
+
+      - name: 📝 Display Test Summary
+        if: always()
+        run: |
+          echo "================================="
+          echo "Test execution completed"
+          echo "Check artifacts section for reports"
+          echo "================================="
