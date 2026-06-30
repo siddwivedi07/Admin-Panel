@@ -103,9 +103,18 @@ public class OpportunityPage {
         "[.//span[normalize-space(.)='Add Opportunity']]"
     );
 
-    // Category select (id="opportunity_cat")
+    // Category select — combobox input (id="opportunity_cat").
+    // NOTE: this input itself is rendered with opacity:0 and readonly by
+    // Ant Design (it's only the hidden combobox trigger); the *real*
+    // clickable surface is the wrapping ".ant-select-selector" div below.
     private final By categorySelectInput = By.xpath(
         "//input[@id='opportunity_cat']"
+    );
+
+    // Category select — wrapping selector div (the actual clickable element)
+    private final By categorySelectorDiv = By.xpath(
+        "//div[contains(@class,'ant-select-selector')]" +
+        "[.//input[@id='opportunity_cat']]"
     );
 
     // Title input (id="title")
@@ -365,10 +374,14 @@ public class OpportunityPage {
 
     public OpportunityPage selectCategory(String categoryName) {
         System.out.println("[OpportunityPage] → Selecting category: " + categoryName);
-        WebElement selectInput = wait.until(
-            ExpectedConditions.elementToBeClickable(categorySelectInput));
-        scrollAndClick(selectInput);
-        sleep(800);
+
+        // Open the dropdown by clicking the wrapper selector div — clicking
+        // the underlying input directly is unreliable since Ant Design
+        // renders it with opacity:0 / readonly and it can fail Selenium's
+        // "clickable" check (visible-but-zero-opacity + readonly combo).
+        WebElement selector = findCategorySelector();
+        scrollAndJsClick(selector);
+        sleep(1000);
 
         By optionLocator = By.xpath(
             "//div[contains(@class,'ant-select-dropdown') and " +
@@ -381,14 +394,69 @@ public class OpportunityPage {
                 ExpectedConditions.elementToBeClickable(optionLocator));
             scrollAndJsClick(option);
         } catch (Exception e) {
-            // Fallback: type to filter, then press Enter
-            selectInput.sendKeys(categoryName);
-            sleep(800);
-            selectInput.sendKeys(Keys.ENTER);
+            System.out.println("[OpportunityPage] → Exact option not found, "
+                + "trying JS click across whole document...");
+            Boolean clicked = false;
+            try {
+                clicked = (Boolean) ((JavascriptExecutor) driver).executeScript(
+                    "var items = document.querySelectorAll(" +
+                    "  '.ant-select-dropdown .ant-select-item-option');" +
+                    "for (var i = 0; i < items.length; i++) {" +
+                    "  if (items[i].textContent.trim() === arguments[0]) {" +
+                    "    items[i].click();" +
+                    "    return true;" +
+                    "  }" +
+                    "}" +
+                    "return false;",
+                    categoryName
+                );
+            } catch (Exception jsEx) {
+                System.out.println("[OpportunityPage] → JS option click failed: " + jsEx.getMessage());
+            }
+            if (!Boolean.TRUE.equals(clicked)) {
+                // Last-resort fallback: type to filter, then press Enter.
+                // Locate the input fresh (avoid stale reference) and type
+                // directly via JS + sendKeys since it is a search combobox.
+                try {
+                    WebElement input = driver.findElement(categorySelectInput);
+                    input.sendKeys(categoryName);
+                    sleep(800);
+                    input.sendKeys(Keys.ENTER);
+                } catch (Exception typeEx) {
+                    throw new org.openqa.selenium.TimeoutException(
+                        "[OpportunityPage] Could not select category '" + categoryName + "'", typeEx);
+                }
+            }
         }
         sleep(600);
         System.out.println("[OpportunityPage] → Category selected ✔");
         return this;
+    }
+
+    /**
+     * Locates the clickable surface for the category dropdown.
+     * Strategy order:
+     *   1. The wrapping .ant-select-selector div (preferred — reliably clickable)
+     *   2. presenceOfElementLocated on the same div (in case it's covered
+     *      but still present, e.g. right after the modal/form mounts)
+     *   3. The raw input as an absolute last resort
+     */
+    private WebElement findCategorySelector() {
+        try {
+            return wait.until(ExpectedConditions.elementToBeClickable(categorySelectorDiv));
+        } catch (Exception ignored) {
+            System.out.println("[OpportunityPage] → Category selector div not clickable yet — retrying with presence check...");
+        }
+        try {
+            WebElement el = wait.until(ExpectedConditions.presenceOfElementLocated(categorySelectorDiv));
+            ((JavascriptExecutor) driver).executeScript(
+                "arguments[0].scrollIntoView({block:'center'});", el);
+            sleep(500);
+            return el;
+        } catch (Exception ignored) {
+            System.out.println("[OpportunityPage] → Category selector div not found — falling back to raw input...");
+        }
+        return wait.until(ExpectedConditions.presenceOfElementLocated(categorySelectInput));
     }
 
     public OpportunityPage enterTitle(String title) {
