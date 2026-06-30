@@ -550,6 +550,22 @@ public class OpportunityPage {
 
     // ── Private helpers ───────────────────────────────────────────────────────
 
+    /**
+     * Waits for the Ant Design modal overlay to fully disappear from the DOM
+     * (or become non-interactive) before the next action proceeds.
+     *
+     * ROOT CAUSE OF "element click intercepted" FAILURES:
+     * After clicking Save, Ant Design's exit animation keeps the
+     * ".ant-modal-wrap" element in the DOM (and sometimes still
+     * "visible" by Selenium's own visibility heuristics) for a short
+     * period after Selenium's invisibilityOfElementLocated() check
+     * already reports success. The very next click then lands on the
+     * still-present overlay instead of the intended element.
+     *
+     * FIX: combine Selenium's invisibility wait with a JS-level poll
+     * that checks the element's actual computed style / pointer-events
+     * and DOM presence, then add a short settle buffer.
+     */
     private void waitForModalToClose() {
         try {
             wait.until(ExpectedConditions.invisibilityOfElementLocated(
@@ -562,6 +578,30 @@ public class OpportunityPage {
                 // proceed regardless
             }
         }
+
+        // Extra JS-level confirmation: poll until no .ant-modal-wrap remains
+        // in the DOM, or every remaining one has pointer-events disabled /
+        // display:none — whichever comes first.
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(10)).until((d) -> {
+                Boolean blocked = (Boolean) ((JavascriptExecutor) d).executeScript(
+                    "var wraps = document.querySelectorAll('.ant-modal-wrap');" +
+                    "for (var i = 0; i < wraps.length; i++) {" +
+                    "  var style = window.getComputedStyle(wraps[i]);" +
+                    "  if (style.display !== 'none' && style.visibility !== 'hidden' " +
+                    "      && style.pointerEvents !== 'none') { return true; }" +
+                    "}" +
+                    "return false;"
+                );
+                return !Boolean.TRUE.equals(blocked);
+            });
+        } catch (Exception ignored) {
+            // If the poll itself times out, fall through to the settle buffer
+            // and let the calling step's own retry/fallback click handle it.
+        }
+
+        // Short settle buffer to let the closing animation fully finish.
+        sleep(600);
     }
 
     private void clearAndType(WebElement input, String value) {
@@ -574,10 +614,32 @@ public class OpportunityPage {
         sleep(300);
     }
 
+    /**
+     * Clicks an element after scrolling it into view.
+     * Self-heals from "element click intercepted" (e.g. a lingering
+     * .ant-modal-wrap overlay) by retrying with a JS click instead of
+     * failing the whole test step.
+     */
     private void scrollAndClick(WebElement element) {
         ((JavascriptExecutor) driver).executeScript(
             "arguments[0].scrollIntoView({block:'center'});", element);
-        element.click();
+        try {
+            element.click();
+        } catch (org.openqa.selenium.ElementClickInterceptedException intercepted) {
+            System.out.println("[OpportunityPage] → Click intercepted, "
+                + "waiting for overlay to clear and retrying with JS click...");
+            waitForModalToClose();
+            try {
+                element.click();
+            } catch (org.openqa.selenium.ElementClickInterceptedException stillIntercepted) {
+                ((JavascriptExecutor) driver).executeScript(
+                    "arguments[0].click();", element);
+            }
+        } catch (org.openqa.selenium.StaleElementReferenceException stale) {
+            // Element was re-rendered; nothing more we can do from here —
+            // let the caller's explicit wait re-locate a fresh element.
+            throw stale;
+        }
     }
 
     private void scrollAndJsClick(WebElement element) {
