@@ -4,7 +4,7 @@
         <listener class-name="com.dams.report.SuiteListener"/>
     </listeners>
     <test name="DAMS Regression">
-        <classes>
+        <classes> 
              <class name="com.dams.tests.login.LoginTest"/> 
             <!-- <class name="com.dams.tests.PaymentEmi.PaymentEmiTest"/>
              <class name="com.dams.tests.GenerateQrCode.GenerateQrCodeTest"/>
