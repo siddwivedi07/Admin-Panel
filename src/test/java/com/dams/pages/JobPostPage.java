@@ -43,9 +43,7 @@ public class JobPostPage {
     );
 
     // ── Step 7 – Add Job button ───────────────────────────────────────────────
-    private final By addJobButton = By.xpath(
-        "/html/body/div/div[2]/div/main/div[2]/div[1]/button"
-    );
+    private final By addJobButton = By.xpath("/html/body/div/div[2]/div/main/div[2]/div[1]/button");
 
     // ── Step 7 – Form fields ──────────────────────────────────────────────────
     private final By companyHospitalInput = By.xpath(
