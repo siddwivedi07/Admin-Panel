@@ -36,7 +36,7 @@ public class BaseTest {
         } catch (Exception e) {
             System.out.println("Error capturing screenshot: " + e.getMessage());
         }
-        DriverFactory.quitDriver();
+        DriverFactory.quitDriver(); 
     }
 
     protected String captureScreenshot(String testName) {
