@@ -14,7 +14,7 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-public class JobTest extends BaseTest {
+public class JobsTest extends BaseTest {
     @Test(description = "Login → Applied Job → Job Post (end-to-end flow)")
     public void Jobs() {
         // ══════════════════════════════════════════════════════════════════════
