@@ -35,11 +35,7 @@ public class JobPostPage {
     private final WebDriverWait wait;
 
     // ── Step 5 – Job Post card ────────────────────────────────────────────────
-    private final By jobPostCard = By.xpath(
-        "//div[contains(@class,'ant-card-body')]" +
-        "[.//div[contains(@class,'textData') and " +
-        "normalize-space(.)='Job Post']]"
-    );
+    private final By jobPostCard = By.xpath("/html/body/div/div[2]/div/main/div[2]/div[2]");
 
     // ── Step 6 – Job Post search box ─────────────────────────────────────────
     private final By jobPostSearchInput = By.xpath(
