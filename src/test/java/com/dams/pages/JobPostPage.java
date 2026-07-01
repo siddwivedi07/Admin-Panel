@@ -44,8 +44,7 @@ public class JobPostPage {
 
     // ── Step 7 – Add Job button ───────────────────────────────────────────────
     private final By addJobButton = By.xpath(
-        "//button[contains(@class,'ant-btn-primary')]" +
-        "[.//span[normalize-space(.)='Add Job']]"
+        "/html/body/div/div[2]/div/main/div[2]/div[1]/button"
     );
 
     // ── Step 7 – Form fields ──────────────────────────────────────────────────
