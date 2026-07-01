@@ -5,16 +5,20 @@ import com.dams.pages.AppliedJobPage;
 import com.dams.pages.JobPostPage;
 import com.dams.pages.LoginPage;
 import com.dams.report.ReportManager;
+import org.openqa.selenium.OutputType;
+import org.openqa.selenium.TakesScreenshot;
 import org.testng.annotations.Test;
+
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 /**
  * TestNG Test Class for Jobs Module.
  * Package : com.dams.tests.Jobs
  * Suite   : testng.xml → <class name="com.dams.tests.Jobs.JobsTest"/>
- *
- * Refactored from the monolithic JobsPage into two focused page objects:
- *   • AppliedJobPage — Jobs menu → Applied Job card → search → back
- *   • JobPostPage    — Job Post card → search → Add Job form → Post Job submit
  *
  * Flow:
  *   PHASE 1 – Login to admin portal
@@ -56,5 +60,30 @@ public class JobsTest extends BaseTest {
         ReportManager.logStep("Job Post", "Phase 3 – Post New Job — Completed", true);
 
         System.out.println("[JobsTest] ✅ Jobs test PASSED");
+    }
+
+    // ── Private helpers ───────────────────────────────────────────────────────
+
+    private void takeScreenshot(String label) {
+        try {
+            Files.createDirectories(Paths.get("screenshots"));
+            String timestamp = LocalDateTime.now()
+                    .format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+            String fileName = "screenshots/" + label + "_" + timestamp + ".png";
+            File src = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
+            Files.copy(src.toPath(), Paths.get(fileName));
+            ReportManager.logStep("Screenshot", "Captured: " + label, true, fileName);
+        } catch (Exception e) {
+            System.err.println("[JobsTest] ✘ Screenshot failed (" + label + "): " + e.getMessage());
+            ReportManager.logStep("Screenshot", "Capture failed: " + label, false);
+        }
+    }
+
+    private void sleep(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 }
